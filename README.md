@@ -1,6 +1,7 @@
 # pihacks
 raspberry pi tools/scripts
 
+
 == Prerequisites ==
 
 * A Raspberry Pi v1, v2, v3, v4 or Zero
@@ -14,9 +15,17 @@ raspberry pi tools/scripts
   * 2719 p4 CS -> RPi GPIO p8 (SPI CS0)
   * 2719 p5 CLK -> RPi GPIO p11 (SPI CLK)
 
+
 == LED Swarm ==
 
 To run the 'swarm' animation
 
 * python/led_swarm.py
+
+
+== LED Text ==
+
+To display a scrolling text message
+
+* python/led_text.py 'your message'
 
