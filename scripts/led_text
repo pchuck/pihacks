@@ -1,0 +1,3 @@
+#!/bin/sh
+#
+~/python/led_text.py $1
