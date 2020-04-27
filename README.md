@@ -8,7 +8,7 @@ raspberry pi tools/scripts
 * An installed Raspberry Pi distribution, such as 'Raspbian'
 * python3 installed (included with Raspbian)
 * SPI enabled in /boot/config.txt (see https://max7219.readthedocs.io/en/0.2.3/)
-* luma.core python packages pip installed (if not included)
+* luma.core library pip installed (see https://luma-led-matrix.readthedocs.io/en/latest/install.html)
 * A max2719 LED matrix, or other serial controlled display, wired to the GPIO ports, as follows (from 2719 pin -> Raspberry Pi GPIO pin):
   * p1 VCC -> RPi p2 5V0
   * p2 GND -> RPi p6 GND
