@@ -7,13 +7,14 @@ raspberry pi tools/scripts
 * A Raspberry Pi v1, v2, v3, v4 or Zero
 * An installed Raspberry Pi distribution, such as 'Raspbian'
 * python3 installed (included with Raspbian)
+* SPI enabled in /boot/config.txt (see https://max7219.readthedocs.io/en/0.2.3/)
 * luma.core python packages pip installed (if not included)
-* A max2719 LED matrix, or other serial controlled display, wired to the GPIO ports, as follows:
-  * 2719 p1 VCC -> RPi GPIO p2 5V0
-  * 2719 p2 GND -> RPi GPIO p6 GND
-  * 2719 p3 DIN -> RPi TPIO p10 (MOSI)
-  * 2719 p4 CS -> RPi GPIO p8 (SPI CS0)
-  * 2719 p5 CLK -> RPi GPIO p11 (SPI CLK)
+* A max2719 LED matrix, or other serial controlled display, wired to the GPIO ports, as follows (from 2719 pin -> Raspberry Pi GPIO pin):
+  * p1 VCC -> RPi p2 5V0
+  * p2 GND -> RPi p6 GND
+  * p3 DIN -> RPi p19 GPIO 10 (MOSI)
+  * p4 CS ->  RPi p24 GPIO 8 (SPI CE0)
+  * p5 CLK -> RPi p23 GPIO 11 (SPI CLK)
 
 
 == LED Swarm ==
