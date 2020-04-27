@@ -28,13 +28,16 @@ from luma.core.interface.serial import spi, noop
 from luma.led_matrix.device import max7219 as led
 from luma.core.render import canvas
 
-# points have an x/y location or component (used for coordinates, dimensions)
+# Points have an x/y component (used for coordinates, dimensions)
 Point = namedtuple('point', 'x y')
-# vpoints have a location and a velocity (used for moving swarm elements)
+# VPpoints have a position and a velocity (used for moving swarm elements)
 VPoint = namedtuple('vpoint', 'x y dx dy')
 
-# generate an array containing count random point x/y and dx/dy velocity tuples,
-# within the bounds of the canvas dimensions 'dim'
+
+## functions
+
+# Generate an array containing count random point x/y and dx/dy velocity tuples,
+# within the bounds of the canvas dimensions 'dim'.
 def generate_vpoints(dim, count):
 	vpoints = []
 	for i in range(count):
@@ -44,8 +47,8 @@ def generate_vpoints(dim, count):
 
 	return(vpoints)
 
-# fix provided point 'p' so that it is within min and max bounds
-# works on 'point' objects that have an x/y component (position, velocity, etc)
+# Fix provided point 'p' so that it is within min and max bounds.
+# Works on 'point' objects that have an x/y component (position, velocity, etc)
 def bound_velocity(minp, maxp, p):
 	if(p.x < minp.x): p = Point(minp.x, p.y)
 	if(p.x > maxp.x): p = Point(maxp.x, p.y)
@@ -54,8 +57,8 @@ def bound_velocity(minp, maxp, p):
 
 	return p
 
-# fix provided vpoint 'vp' so that it is within min and max bounds.
-# prevents the x and y coordinates from leaving the bounded region, and
+# Fix provided vpoint 'vp' so that it is within min and max bounds.
+# Prevents the x and y coordinates from leaving the bounded region, and
 # inverts v when outside the boundary, so points 'bounce' rather than stick.
 # note: since screen coordinates are 0..max-1, adjusts accordingly.
 def bound_vpoint(minp, maxp, vp):
@@ -66,10 +69,10 @@ def bound_vpoint(minp, maxp, vp):
 
 	return vp
 
-# given canvas dimensions, maximum allowed velocity and a vpoint
+# Given canvas dimensions, maximum allowed velocity and a vpoint
 # (including its position and velocity components)
 # randomly perturb the point's velocity, calculate its new location
-# and return the new updated vpoint
+# and return the new updated vpoint.
 def update_vpoint(dim, maxv, vp):
 	zero = Point(0, 0)
 	d = Point(randrange(3) - 1, randrange(3) - 1) # random delta
@@ -81,8 +84,8 @@ def update_vpoint(dim, maxv, vp):
 
 	return(vp)
 
-# given canvas dimensions, maximum allowed velocity and a set of vpoints,
-# update all the points and velocities (see update_vpoint())
+# Given canvas dimensions, maximum allowed velocity and a set of vpoints,
+# update all the points and velocities (see update_vpoint()).
 def update_vpoints(dim, maxv, vpoints):
 	new_vpoints = []
 	for vp in vpoints:
@@ -101,7 +104,7 @@ def swarm(n, block_orientation, rotate, inreverse, intensity,
 	dimensions = Point(x, y) # max canvas dimensions, x and y
 	maxv = Point(maxvx, maxvy) # maximum member velocity, x and y components
 	
-	# setup the LED port and device
+	# setup the port and LED device
 	serial = spi(port=0, device=0, gpio=noop())
 	device = led(serial,
 			     cascaded=n,
@@ -113,7 +116,7 @@ def swarm(n, block_orientation, rotate, inreverse, intensity,
 	# generate intial points/velocities
 	vpoints = generate_vpoints(dimensions, members)
 
-	# continuously update and animate
+	# continuosly run the simulation/animation
 	while(True):
 		vpoints = update_vpoints(dimensions, maxv, vpoints)
 		with canvas(device) as draw:
