@@ -123,17 +123,6 @@ def swarm(n, block_orientation, rotate, inreverse, intensity,
 				draw.point(p, fill=color)
 		time.sleep(delay)
 
-# line version
-#	while(True):
-#		vps_new = update_vpoints(dimensions, maxv, vpoints)
-#		with canvas(device) as draw:
-#			for i in range(len(vpoints)):
-#				v1 = Point(vpoints[i].x, vpoints[i].y) # old position
-#				v2 = Point(vps_new[i].x, vps_new[i].y) # new position
-#				draw.line([v1, v2], fill='White') # fill='color')
-#			vpoints = vps_new
-#		time.sleep(delay)
-
 
 ## argument parsing
 if __name__ == "__main__":
