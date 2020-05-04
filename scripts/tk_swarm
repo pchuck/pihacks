@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# tk_swarm is a desktop version of led_swarm (the raspberry pi project).
+#
+python/tk_swarm.py --color darkred --outline red 1024 512 100

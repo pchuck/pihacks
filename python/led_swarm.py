@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
 # led_swarm.py
 #
@@ -20,112 +20,69 @@
 # Distributed under the Mozilla Public License
 # http://www.mozilla.org/NPL/MPL-1.1.txt
 #
+import sys, os
 import time
-import argparse
 from random import randrange
-from collections import namedtuple
+import argparse
 from luma.core.interface.serial import spi, noop
 from luma.led_matrix.device import max7219 as led
 from luma.core.render import canvas
 
-# Points have an x/y component (used for coordinates, dimensions)
-Point = namedtuple('point', 'x y')
-# VPpoints have a position and a velocity (used for moving swarm elements)
-VPoint = namedtuple('vpoint', 'x y dx dy')
+
+# load Firefly primitives
+pathname = os.path.dirname(sys.argv[0])        
+fullpath = os.path.abspath(pathname)
+exec(compile(source=open(fullpath + '/fireflies.py').read(),
+			 filename='fireflies.py', mode='exec'))
 
 
-## functions
+# FireflyRenderer
+#
+# Encapsulates all rendering, including the graphics context and/or canvas.
+# When fireflies positions have changed, or the canvas changed,
+# render() is called to update the visual representation.
+#
+# This renderer is specific to the max2719 driver
+#
+class FireflyRendererLed(object):
+	def __init__(self, canvas, device, bounds, fireflies, color, **kwargs):
+		self.canvas = canvas
+		self.device = device
+		self.color = color
+		self.fireflies = fireflies
+		for firefly in self.fireflies.flies:
+			firefly.p = Point(randrange(bounds.x), randrange(bounds.y))
+			
+	# render everything on the canvas
+	def render(self):
+		with self.canvas(self.device) as draw:
+			for firefly in self.fireflies.flies:
+				# extract only the current position for drawing
+				p = Point(firefly.p.x, firefly.p.y) 
+				draw.point(p, fill=self.color)
 
-# Generate an array containing count random point x/y and dx/dy velocity tuples,
-# within the bounds of the canvas dimensions 'dim'.
-def generate_vpoints(dim, count):
-	vpoints = []
-	for i in range(count):
-		# random locations on the canvas with zero initial velocity
-		vp = VPoint(randrange(dim.x), randrange(dim.y), 0, 0)
-		vpoints.append(vp)
-
-	return(vpoints)
-
-# Fix provided point 'p' so that it is within min and max bounds.
-# Works on 'point' objects that have an x/y component (position, velocity, etc)
-def bound_velocity(minp, maxp, p):
-	if(p.x < minp.x): p = Point(minp.x, p.y)
-	if(p.x > maxp.x): p = Point(maxp.x, p.y)
-	if(p.y < minp.y): p = Point(p.x, minp.y)
-	if(p.y > maxp.y): p = Point(p.x, maxp.y)
-
-	return p
-
-# Fix provided vpoint 'vp' so that it is within min and max bounds.
-# Prevents the x and y coordinates from leaving the bounded region, and
-# inverts v when outside the boundary, so points 'bounce' rather than stick.
-# note: since screen coordinates are 0..max-1, adjusts accordingly.
-def bound_vpoint(minp, maxp, vp):
-	if(vp.x <  minp.x): vp = VPoint(minp.x,     vp.y,      -vp.dx,  vp.dy)
-	if(vp.x >= maxp.x): vp = VPoint(maxp.x - 1, vp.y,      -vp.dx,  vp.dy)
-	if(vp.y <  minp.y): vp = VPoint(vp.x,       minp.y,     vp.dx, -vp.dy)
-	if(vp.y >= maxp.y): vp = VPoint(vp.x,       maxp.y - 1, vp.dx, -vp.dy)
-
-	return vp
-
-# Given canvas dimensions, maximum allowed velocity and a vpoint
-# (including its position and velocity components)
-# randomly perturb the point's velocity, calculate its new location
-# and return the new updated vpoint.
-def update_vpoint(dim, maxv, vp):
-	zero = Point(0, 0)
-	d = Point(randrange(3) - 1, randrange(3) - 1) # random delta
-	v = Point(vp.dx + d.x, vp.dy + d.y) # apply random delta to current velocity
-	nmaxv = Point(-maxv.x, -maxv.y) # maximum negative velocity
-	v = bound_velocity(nmaxv, maxv, v) # bound velocity between neg and pos max
-	vp = VPoint(vp.x + v.x, vp.y + v.y, v.x, v.y) # apply the velocity
-	vp = bound_vpoint(zero, dim, vp) # bound the position component
-
-	return(vp)
-
-# Given canvas dimensions, maximum allowed velocity and a set of vpoints,
-# update all the points and velocities (see update_vpoint()).
-def update_vpoints(dim, maxv, vpoints):
-	new_vpoints = []
-	for vp in vpoints:
-		new_vpoints.append(update_vpoint(dim, maxv, vp))
-		
-	return(new_vpoints)
-
-
+			
 ##
 ## swarm
 ##
-def swarm(n, block_orientation, rotate, inreverse, intensity,
-		  x, y, maxvx, maxvy, 
-		  members, color, delay):
-	
-	dimensions = Point(x, y) # max canvas dimensions, x and y
-	maxv = Point(maxvx, maxvy) # maximum member velocity, x and y components
-	
+def swarm(n, block_orientation, rotate, inreverse, intensity, bounds,
+		  count, maxv, varyv, delay, color, **kwargs):
+
 	# setup the port and LED device
+	size = 1 
 	serial = spi(port=0, device=0, gpio=noop())
-	device = led(serial,
-			     cascaded=n,
-				 block_orientation=block_orientation,
-				 rotate=rotate,
-				 blocks_arranged_in_reverse_order=inreverse)
+	device = led(serial, cascaded=n, block_orientation=block_orientation,
+				 rotate=rotate, blocks_arranged_in_reverse_order=inreverse)
 	device.contrast(intensity)
-
-	# generate intial points/velocities
-	vpoints = generate_vpoints(dimensions, members)
-
-	# continuosly run the simulation/animation
+	fireflies = Fireflies(bounds, count, size, maxv, varyv)
+	renderer = FireflyRendererLed(canvas, device, bounds,
+								  fireflies, color, **kwargs)
 	while(True):
-		vpoints = update_vpoints(dimensions, maxv, vpoints)
-		with canvas(device) as draw:
-			for vp in vpoints:
-				# extract only the current position for drawing
-				p = Point(vp.x, vp.y) 
-				draw.point(p, fill=color)
+		for fly in fireflies.flies:
+			fly.move()
+		renderer.render()
 		time.sleep(delay)
-
+	
 
 ## argument parsing
 if __name__ == "__main__":
@@ -135,41 +92,47 @@ if __name__ == "__main__":
 	# hardware constants
 	parser.add_argument('--cascaded', '-n', type=int, default=1,
         help='Number of cascaded MAX7219 LED matrices')
-	parser.add_argument('--block-orientation', type=int, default=0,
+	parser.add_argument('--block-orientation', '-bo', type=int, default=0,
 		choices=[0, 90, -90],
 		help='Corrects block orientation when wired vertically')
-	parser.add_argument('--rotate', type=int, default=0,
+	parser.add_argument('--rotate', '-rot', type=int, default=0,
 		choices=[0, 1, 2, 3],
 		help='Rotate display 0=0°, 1=90°, 2=180°, 3=270°')
-	parser.add_argument('--reverse-order', type=bool, default=False,
+	parser.add_argument('--reverse-order', '-ro', type=bool, default=False,
 		help='Set to true if blocks are in reverse order')
-	parser.add_argument('--intensity', type=int, default=128,
+	parser.add_argument('--intensity', '-i', type=int, default=128,
 		help='The intensity of the LED output (from 0..255)')
+	# swarm features
+	parser.add_argument('--color', '-c', type=str, default='White',
+		help='The color of the swarm members')
 	parser.add_argument('--max-x-velocity', '-maxvx', type=int, default=2, 
 		help='The maximum member x velocity')
 	parser.add_argument('--max-y-velocity', '-maxvy', type=int, default=1, 
 		help='The maximum member y velocity')
+	parser.add_argument('--vary-v', '-vv', type=bool, default=True,
+		help='Set true to allow different max velocities')
+	parser.add_argument('--delay','-d', type=float, default=0.1,
+		help='The delay (in seconds) between iterations')
+	# required positional arguments
 	parser.add_argument('x', type=int, # required!
 		help='The x resolution of the matrix')
 	parser.add_argument('y', type=int, # required!
 		help='The y resolution of the matrix')
-
-	# feature arguments
-	parser.add_argument('members', type=int, 
+	parser.add_argument('members', type=int, # required
 		help='The number of members in the swarm (try 1..100)')
-	parser.add_argument('--color', type=str, default='White',
-		help='The color to use')
-	parser.add_argument('--delay', type=float, default=0.1,
-		help='The delay (in seconds) between iterations')
 
 	args = parser.parse_args()
 	
 	try:
 		swarm(args.cascaded, args.block_orientation,
 			 args.rotate, args.reverse_order, args.intensity,
-			 args.x, args.y, args.max_x_velocity, args.max_y_velocity,
-			 args.members, args.color, args.delay)
-		
+			 Point(args.x, args.y),
+			 args.members, 
+ 			 Point(args.max_x_velocity, args.max_y_velocity),
+			 args.vary_v,
+		     args.delay,
+			 args.color)
+
 	except KeyboardInterrupt:
 		pass
 

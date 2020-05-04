@@ -1,0 +1,79 @@
+#
+# fireflies.py
+#
+# 'firefly' primitives used by the tk and raspberry pi versions of the
+# swarm app. See tk_swarm.py or led_swarm.py.
+#
+# Copyright (C) 2020, Patrick Charles
+# Distributed under the Mozilla Public License
+# http://www.mozilla.org/NPL/MPL-1.1.txt
+#
+from random import randrange
+from collections import namedtuple
+
+
+# Points have an x/y component (used for coordinates, dimensions)
+Point = namedtuple('point', 'x y')
+# VPpoints have a position and a velocity (used for moving swarm elements)
+VPoint = namedtuple('vpoint', 'x y dx dy')
+
+
+# Fireflies is a container for a swarm of fireflies.
+#
+class Fireflies(object):
+	def __init__(self, bounds, count, size, maxv, varyv):
+		self.flies = []
+		for i in range(count):
+			p = Point(randrange(bounds.x), randrange(bounds.y))
+			if(varyv):
+				nmv = Point(randrange(maxv.x) + 1, randrange(maxv.y) + 1)
+				self.flies.append(Firefly(bounds, p, size, nmv))
+			else:
+				self.flies.append(Firefly(bounds, p, size, maxv))
+
+# Firefly
+#
+# A firefly has a current position and velocity.
+# Velocity is randomly and incrementally perturbed.
+# Movement is governed by max velocity (maxv) and positional boundaries (max).
+#
+class Firefly(object):
+	def __init__(self, bounds, pos, size, maxv):
+		self.b = bounds # bounding extent
+		self.p = pos # current position
+		self.s = size # size (diameter)
+		self.v = Point(0, 0) # velocity
+		self.maxv = maxv # maximum velocity
+
+	def move(self):
+		# perturb the velocity
+		self.d = Point(randrange(3) - 1, randrange(3) - 1)
+		self.v = Point(self.v.x + self.d.x, self.v.y + self.d.y)
+
+		# limit velocity
+		if(self.v.x >  self.maxv.x): self.v = Point( self.maxv.x,  self.v.y)
+		if(self.v.y >  self.maxv.y): self.v = Point( self.v.x,     self.maxv.y)
+		if(self.v.x < -self.maxv.x): self.v = Point(-self.maxv.x,  self.v.y)
+		if(self.v.y < -self.maxv.y): self.v = Point( self.v.x,    -self.maxv.y)
+			
+		# invert velocity if move would go out of bounds
+		if(self.p.x + self.v.x >= self.b.x):
+			self.v = Point(-abs(self.v.x), self.v.y)
+		if(self.p.x + self.v.x < 0):
+			self.v = Point(abs(self.v.x), self.v.y)
+		if(self.p.y + self.v.y >= self.b.y):
+			self.v = Point(self.v.x, -abs(self.v.y))
+		if(self.p.y + self.v.y < 0):
+			self.v = Point(self.v.x, abs(self.v.y))
+
+		# apply the velocity to arrive at new position
+		self.p = Point(self.p.x + self.v.x, self.p.y + self.v.y)
+				
+		# assert boundaries
+#		if(self.p.x >= self.b.x): self.p = Point(self.b.x - 1, self.p.y)
+#		if(self.p.y >= self.b.y): self.p = Point(self.p.x,     self.b.y - 1)
+#		if(self.p.x < 0):         self.p = Point(0,            self.p.y)
+#		if(self.p.y < 0):         self.p = Point(self.p.x,     0)
+
+#		print("b: " + str(self.b.x) + ", " + str(self.b.y))
+#		print("p: " + str(self.p.x) + ", " + str(self.p.y))
