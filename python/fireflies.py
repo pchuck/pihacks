@@ -68,12 +68,3 @@ class Firefly(object):
 
 		# apply the velocity to arrive at new position
 		self.p = Point(self.p.x + self.v.x, self.p.y + self.v.y)
-				
-		# assert boundaries
-#		if(self.p.x >= self.b.x): self.p = Point(self.b.x - 1, self.p.y)
-#		if(self.p.y >= self.b.y): self.p = Point(self.p.x,     self.b.y - 1)
-#		if(self.p.x < 0):         self.p = Point(0,            self.p.y)
-#		if(self.p.y < 0):         self.p = Point(self.p.x,     0)
-
-#		print("b: " + str(self.b.x) + ", " + str(self.b.y))
-#		print("p: " + str(self.p.x) + ", " + str(self.p.y))
