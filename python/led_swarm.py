@@ -5,8 +5,6 @@
 # A python script for animating a 'swarm' of lights on a raspberry pi
 # with max2719 or other similar LED matrix display connected via gpio.
 #
-# Requires a Raspberry pi with an LED matrix/matrices addressed via GPIO.
-#
 # The swarm consists of a specified number of elements, each with its own
 # position and velocity. With each iteration, velocities are perturbed
 # using brownian motion which randomly increments or decrements the

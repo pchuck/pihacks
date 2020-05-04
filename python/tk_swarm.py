@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #
-# firefly.py
+# tk_swarm.py
 #
-# A python script for animating a 'swarm' of fireflies.
+# A python script for animating a 'swarm' of pixels.
 #
 # The swarm consists of a specified number of elements, each with its own
 # position and velocity. With each iteration, velocities are perturbed
