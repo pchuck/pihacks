@@ -39,34 +39,38 @@ exec(compile(source=open(fullpath + '/fireflies.py').read(),
 #
 class FireflyRendererTk(object):
 	def __init__(self, canvas, fireflies, size=10, **kwargs):
-		self.canvas = canvas
-		self.fireflies = fireflies
-		self.s = size
-		self.max = Point(0, 0) # 0's here and in oval. resize inits everything
+		self.canvas = canvas # tk canvas
+		self.fireflies = fireflies # the swarm elements
+		self.s = size # element size in pixels
+		self.s2 = self.s / 2
+		self.b = Point(0, 0) # canvas bounds
+		
+		# initially zero bounds and zero position. resize inits everything
 		for firefly in self.fireflies.flies:
 			firefly.id = canvas.create_oval(0, 0, 0, 0, **kwargs)
 
-	# resize the canvas with new max x and y size
+	# handle canvas resize 
 	def resize(self, size):
 		for firefly in self.fireflies.flies:
-			if(self.max.x == 0 or self.max.y == 0 or size.x ==0 or size.y == 0):
+			# if the canvas was previously zero in size, skip the scaling
+			if(self.b.x == 0 or self.b.y == 0 or size.x ==0 or size.y == 0):
 				firefly.p = Point(randrange(size.x), randrange(size.y))
 			else:
-				scale = Point(size.x / self.max.x, size.y / self.max.y)
+				scale = Point(size.x / self.b.x, size.y / self.b.y)
+				# update the firefly position, boundaries
 				firefly.p = Point(firefly.p.x * scale.x, firefly.p.y * scale.y)
 				firefly.b = Point(firefly.b.x * scale.x, firefly.b.y * scale.y)
-				firefly.max = size
-
+			# update the rendered position
 			self.canvas.coords(firefly.id,
-							   firefly.p.x, firefly.p.y,
-							   firefly.p.x + self.s, firefly.p.y + self.s)
-
-		self.max = size
+							   firefly.p.x - self.s2, firefly.p.y - self.s2,
+							   firefly.p.x + self.s2, firefly.p.y + self.s2)
+		self.b = size
 			
 	# render everything on the canvas
 	def render(self): 
 		for firefly in self.fireflies.flies:
 			self.canvas.move(firefly.id, firefly.v.x, firefly.v.y)
+
 
 # tkinter app
 #
@@ -76,8 +80,7 @@ class App(object):
 				 delay, **kwargs): # rendering params
 		self.master = master
 		self.canvas = tk.Canvas(self.master, width=bounds.x, height=bounds.y,
-								highlightthickness=0,
-								background='black')
+								highlightthickness=0, background='black')
 		self.canvas.pack(fill="both", expand=True)
 		self.fireflies = Fireflies(bounds, count, size, maxv=maxv, varyv=varyv)
 		self.renderer = FireflyRendererTk(self.canvas, self.fireflies,
@@ -93,9 +96,10 @@ class App(object):
 		self.canvas.config(width=event.width, height=event.height)
 		self.renderer.resize(Point(event.width, event.height))
 
-	# animation
+	# animate
 	def animation(self):
-		for fly in self.fireflies.flies: fly.move()
+		for fly in self.fireflies.flies:
+			fly.move()
 		self.renderer.render()
 		self.master.after(self.delay, self.animation)
 
