@@ -12,6 +12,9 @@
 #
 # Run with '--help' to see available options.
 #
+# This is the desktop/tk version.
+# For the Raspberry pi version that works on LED matrices, see led_swarm.py.
+#
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
 # http://www.mozilla.org/NPL/MPL-1.1.txt
