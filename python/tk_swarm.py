@@ -41,8 +41,7 @@ class FireflyRendererTk(object):
 	def __init__(self, canvas, fireflies, size=10, **kwargs):
 		self.canvas = canvas # tk canvas
 		self.fireflies = fireflies # the swarm elements
-		self.s = size # element size in pixels
-		self.s2 = self.s / 2
+		self.s, self.s2 = size, size/2 # element size in pixels
 		self.b = Point(0, 0) # canvas bounds
 		
 		# initially zero bounds and zero position. resize inits everything
@@ -50,13 +49,13 @@ class FireflyRendererTk(object):
 			firefly.id = canvas.create_oval(0, 0, 0, 0, **kwargs)
 
 	# handle canvas resize 
-	def resize(self, size):
+	def resize(self, bounds):
 		for firefly in self.fireflies.flies:
 			# if the canvas was previously zero in size, skip the scaling
-			if(self.b.x == 0 or self.b.y == 0 or size.x ==0 or size.y == 0):
-				firefly.p = Point(randrange(size.x), randrange(size.y))
+			if(self.b.x == 0 or self.b.y == 0 or bounds.x ==0 or bounds.y == 0):
+				firefly.p = Point(randrange(bounds.x), randrange(bounds.y))
 			else:
-				scale = Point(size.x / self.b.x, size.y / self.b.y)
+				scale = Point(bounds.x / self.b.x, bounds.y / self.b.y)
 				# update the firefly position, boundaries
 				firefly.p = Point(firefly.p.x * scale.x, firefly.p.y * scale.y)
 				firefly.b = Point(firefly.b.x * scale.x, firefly.b.y * scale.y)
@@ -64,7 +63,7 @@ class FireflyRendererTk(object):
 			self.canvas.coords(firefly.id,
 							   firefly.p.x - self.s2, firefly.p.y - self.s2,
 							   firefly.p.x + self.s2, firefly.p.y + self.s2)
-		self.b = size
+		self.b = bounds
 			
 	# render everything on the canvas
 	def render(self): 
