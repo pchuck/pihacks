@@ -13,9 +13,8 @@ from collections import namedtuple
 
 
 # Points have an x/y component (used for coordinates, dimensions)
+#
 Point = namedtuple('point', 'x y')
-# VPpoints have a position and a velocity (used for moving swarm elements)
-VPoint = namedtuple('vpoint', 'x y dx dy')
 
 
 # Fireflies is a container for a swarm of fireflies.
