@@ -20,15 +20,15 @@ Point = namedtuple('point', 'x y')
 # Fireflies is a container for a swarm of fireflies.
 #
 class Fireflies(object):
-	def __init__(self, bounds, count, size, maxv, varyv):
+	def __init__(self, bounds, count, maxv, varyv):
 		self.flies = []
 		for i in range(count):
 			p = Point(randrange(bounds.x), randrange(bounds.y))
 			if(varyv):
 				nmv = Point(randrange(maxv.x) + 1, randrange(maxv.y) + 1)
-				self.flies.append(Firefly(bounds, p, size, nmv))
+				self.flies.append(Firefly(bounds, p, nmv))
 			else:
-				self.flies.append(Firefly(bounds, p, size, maxv))
+				self.flies.append(Firefly(bounds, p, maxv))
 
 # Firefly
 #
@@ -37,10 +37,9 @@ class Fireflies(object):
 # Movement is governed by max velocity (maxv) and positional boundaries (max).
 #
 class Firefly(object):
-	def __init__(self, bounds, pos, size, maxv):
+	def __init__(self, bounds, pos, maxv):
 		self.b = bounds # bounding extent
 		self.p = pos # current position
-		self.s = size # size (diameter)
 		self.v = Point(0, 0) # velocity
 		self.maxv = maxv # maximum velocity
 

@@ -47,37 +47,34 @@ class FireflyRendererLed(object):
 		self.canvas = canvas
 		self.device = device
 		self.color = color
-		self.fireflies = fireflies
-		for firefly in self.fireflies.flies:
+		self.ffs = fireflies
+		for firefly in self.ffs.flies:
 			firefly.p = Point(randrange(bounds.x), randrange(bounds.y))
 			
 	# render everything on the canvas
 	def render(self):
 		with self.canvas(self.device) as draw:
-			for firefly in self.fireflies.flies:
-				# extract only the current position for drawing
-				p = Point(firefly.p.x, firefly.p.y) 
-				draw.point(p, fill=self.color)
+			for firefly in self.ffs.flies:
+				draw.point(firefly.p, fill=self.color)
 
 			
-##
-## swarm
-##
+# swarm
+#
+# initiate the device and orchestrate the swarm animation 
+#
 def swarm(n, block_orientation, rotate, inreverse, intensity, bounds,
 		  count, maxv, varyv, delay, color, **kwargs):
 
-	# setup the port and LED device
-	size = 1 
+	# setup the port and LED device 
 	serial = spi(port=0, device=0, gpio=noop())
 	device = led(serial, cascaded=n, block_orientation=block_orientation,
 				 rotate=rotate, blocks_arranged_in_reverse_order=inreverse)
 	device.contrast(intensity)
-	fireflies = Fireflies(bounds, count, size, maxv, varyv)
-	renderer = FireflyRendererLed(canvas, device, bounds,
-								  fireflies, color, **kwargs)
+	ffs = Fireflies(bounds, count, maxv, varyv)
+	renderer = FireflyRendererLed(canvas, device, bounds, ffs, color, **kwargs)
 	while(True):
-		for fly in fireflies.flies:
-			fly.move()
+		for firefly in ffs.flies:
+			firefly.move()
 		renderer.render()
 		time.sleep(delay)
 	
