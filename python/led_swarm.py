@@ -22,6 +22,7 @@ import sys, os
 import time
 from random import randrange
 import argparse
+from collections import deque
 from luma.core.interface.serial import spi, noop
 from luma.led_matrix.device import max7219 as led
 from luma.core.render import canvas
@@ -73,8 +74,7 @@ def swarm(n, block_orientation, rotate, inreverse, intensity, bounds,
 	ffs = Fireflies(bounds, count, maxv, varyv)
 	renderer = FireflyRendererLed(canvas, device, bounds, ffs, color, **kwargs)
 	while(True):
-		for firefly in ffs.flies:
-			firefly.move()
+		deque(map(lambda firefly: firefly.move(), ffs.flies))
 		renderer.render()
 		time.sleep(delay)
 	

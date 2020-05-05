@@ -22,6 +22,7 @@
 import sys, os
 import argparse
 from random import randrange
+from collections import deque
 import tkinter as tk
 
 
@@ -100,8 +101,7 @@ class App(object):
 
 	# animate
 	def animation(self):
-		for firefly in self.ffs.flies:
-			firefly.move()
+		deque(map(lambda firefly: firefly.move(), self.ffs.flies))
 		self.renderer.render()
 		self.master.after(self.delay, self.animation)
 
