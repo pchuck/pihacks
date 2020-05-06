@@ -5,4 +5,4 @@
 #
 # array is 32x8 pixels. initialize with a swarm of 10 animated cells
 #
-python/led_swarm.py --cascaded=4 --block-orientation=90 --reverse-order=True --intensity=1 -maxvx 2 -maxvy 1 --delay=0.1 32 8 12
+python/led_swarm_luma.py --cascaded=4 --block-orientation=90 --reverse-order=True --intensity=1 -maxvx 2 -maxvy 1 --delay=0.1 32 8 12

@@ -21,11 +21,11 @@ raspberry pi tools/scripts
 
 To run the 'swarm' animation
 
-* python/led_swarm.py
+* python/led_swarm_luma.py
 
 e.g. To simulate a swarm of 10 elements on 4 cascaded 8x8 LED matrics, oriented sideways and chained backwards:
 
-* python/led_swarm.py --cascaded=4 --block-orientation=90 --reverse-order=True 32 8 10
+* python/led_swarm_luma.py --cascaded=4 --block-orientation=90 --reverse-order=True 32 8 10
 
 
 == LED Text ==

@@ -8,7 +8,7 @@
 # Distributed under the Mozilla Public License
 # http://www.mozilla.org/NPL/MPL-1.1.txt
 #
-from random import randrange
+from random import randrange, getrandbits
 from collections import namedtuple
 
 
@@ -44,9 +44,14 @@ class Firefly(object):
 		self.maxv = maxv # maximum velocity
 
 	def move(self):
-		# perturb the velocity
-		self.d = Point(randrange(3) - 1, randrange(3) - 1)
-		self.v = Point(self.v.x + self.d.x, self.v.y + self.d.y)
+		# perturb the velocity, random velocity delta
+		rvd = randrange(3) - 1 
+		
+		# changing only x or y is smoother than changing both simultaneously
+		if(bool(getrandbits(1))):
+			self.v = Point(self.v.x, self.v.y + rvd)
+		else:
+			self.v = Point(self.v.x + rvd, self.v.y)
 
 		# limit velocity
 		if(self.v.x >  self.maxv.x): self.v = Point( self.maxv.x,  self.v.y)

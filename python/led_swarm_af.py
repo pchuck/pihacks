@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# led_swarm.py
+# led_swarm_af.py
 #
 # A python script for animating a 'swarm' of lights on a raspberry pi
 # with max2719 or other similar LED matrix display connected via gpio.
@@ -14,6 +14,16 @@
 # Run with '--help' to see the many options related to your specific
 # max2719 panel(s) setup, resolution, orientation, etc.
 #
+# Typical max2719 to RPi GPIO wiring:
+#   p1 VCC -> RPi p2 5V0
+#   p2 GND -> RPi p6 GND
+#   p3 DIN -> RPi p19 GPIO 10 (MOSI)
+#   p4 CS ->  RPi p24 GPIO 8 (SPI CE0)
+#   p5 CLK -> RPi p23 GPIO 11 (SPI CLK)
+#
+# This version uses the adafruit libraries:
+#   adafruit-circuitpython-max7219, adafruit-circuitpython-framebuf
+#
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
 # http://www.mozilla.org/NPL/MPL-1.1.txt
@@ -23,9 +33,14 @@ import time
 from random import randrange
 import argparse
 from collections import deque
-from luma.core.interface.serial import spi, noop
-from luma.led_matrix.device import max7219 as led
-from luma.core.render import canvas
+from adafruit_max7219 import matrices
+from board import SCLK, CE0, MOSI
+import busio
+import digitalio
+
+clk = SCLK
+din = MOSI
+cs = digitalio.DigitalInOut(CE0)
 
 
 # load Firefly primitives
@@ -43,7 +58,7 @@ exec(compile(source=open(fullpath + '/fireflies.py').read(),
 #
 # This renderer is specific to the max2719 driver
 #
-class FireflyRendererLed(object):
+class FireflyRendererLed_AF(object):
 	def __init__(self, canvas, device, bounds, fireflies, color, **kwargs):
 		self.canvas = canvas
 		self.device = device
@@ -54,25 +69,28 @@ class FireflyRendererLed(object):
 			
 	# render everything on the canvas
 	def render(self):
-		with self.canvas(self.device) as draw:
-			for firefly in self.ffs.flies:
-				draw.point(firefly.p, fill=self.color)
+		self.device.fill(0)
+		for firefly in self.ffs.flies:
+			self.device.pixel(firefly.p.x, firefly.p.y, 1)
+		self.device.show()
 
 			
 # swarm
 #
 # initiate the device and orchestrate the swarm animation 
 #
-def swarm(n, block_orientation, rotate, inreverse, intensity, bounds,
-		  count, maxv, varyv, delay, color, **kwargs):
+def swarm(intensity, bounds, count, maxv, varyv, delay, color, **kwargs):
 
-	# setup the port and LED device 
-	serial = spi(port=0, device=0, gpio=noop())
-	device = led(serial, cascaded=n, block_orientation=block_orientation,
-				 rotate=rotate, blocks_arranged_in_reverse_order=inreverse)
-	device.contrast(intensity)
+	# setup the port and LED device
+	serial = busio.SPI(clk, MOSI=din)
+	device = matrices.Matrix8x8(serial, cs)
+	device.brightness(intensity)
+	device.fill(0)
+        
 	ffs = Fireflies(bounds, count, maxv, varyv)
-	renderer = FireflyRendererLed(canvas, device, bounds, ffs, color, **kwargs)
+	canvas = None
+	renderer = FireflyRendererLed_AF(canvas, device, bounds, ffs, color,
+                                         **kwargs)
 	while(True):
 		deque(map(lambda firefly: firefly.move(), ffs.flies))
 		renderer.render()
@@ -85,18 +103,8 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 	# hardware constants
-	parser.add_argument('--cascaded', '-n', type=int, default=1,
-        help='Number of cascaded MAX7219 LED matrices')
-	parser.add_argument('--block-orientation', '-bo', type=int, default=0,
-		choices=[0, 90, -90],
-		help='Corrects block orientation when wired vertically')
-	parser.add_argument('--rotate', '-rot', type=int, default=0,
-		choices=[0, 1, 2, 3],
-		help='Rotate display 0=0°, 1=90°, 2=180°, 3=270°')
-	parser.add_argument('--reverse-order', '-ro', type=bool, default=False,
-		help='Set to true if blocks are in reverse order')
-	parser.add_argument('--intensity', '-i', type=int, default=128,
-		help='The intensity of the LED output (from 0..255)')
+	parser.add_argument('--intensity', '-i', type=int, default=5,
+		help='The intensity of the LED output (from 0..10)')
 	# swarm features
 	parser.add_argument('--color', '-c', type=str, default='White',
 		help='The color of the swarm members')
@@ -119,14 +127,13 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 	
 	try:
-		swarm(args.cascaded, args.block_orientation,
-			 args.rotate, args.reverse_order, args.intensity,
-			 Point(args.x, args.y),
-			 args.members, 
- 			 Point(args.max_x_velocity, args.max_y_velocity),
-			 args.vary_v,
-		     args.delay,
-			 args.color)
+		swarm(args.intensity,
+			  Point(args.x, args.y),
+			  args.members, 
+ 			  Point(args.max_x_velocity, args.max_y_velocity),
+			  args.vary_v,
+		      args.delay,
+			  args.color)
 
 	except KeyboardInterrupt:
 		pass
