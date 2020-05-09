@@ -1,8 +1,7 @@
 #!/bin/sh
 #
-# invocation of led_swarm with parameters specific to the following setup:
-#   4 cascaded MAX7219 arrays, oriented 90deg and reversed
+# led_swarm_luma for a max7129 w/ 4 panels (32x8) and special orientation.
 #
-# array is 32x8 pixels. initialize with a swarm of 10 animated cells
+# Use higher x than y peak velocity, and 12 animated cells.
 #
-python/led_swarm_luma.py --device max7219 --cascaded=4 --block-orientation=90 --reverse-order=True --intensity=1 -maxvx 2 -maxvy 1 --delay=0.1 32 8 12
+python/led_swarm_luma.py --device=max7219 --cascaded=4 --block-orientation=90 --reverse-order=True --intensity=1 -mvx 2 -mvy 1 --delay=0.1 32 8 12

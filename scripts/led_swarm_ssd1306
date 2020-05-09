@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# invocation of led_swarm with parameters specific to the ssd1306
+# led_swarm_swarm with parameters for a ssd1306 display (128x64).
 #
-# display is 128x64 pixels. initialize with a swarm of 10 animated cells
+# Use higher x than y peak velocity, and 10 animated cells
 #
-python/led_swarm_luma.py --device ssd1306 --delay 0 -maxvx 5 -maxvy 3 128 64 20
+python/led_swarm_luma.py --device=ssd1306 --delay=0 -mvx 6 -mvy 3 128 64 10

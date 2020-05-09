@@ -140,9 +140,9 @@ if __name__ == "__main__":
     # swarm features
     parser.add_argument('--color', '-c', type=str, default='White',
         help='The color of the swarm members')
-    parser.add_argument('--max-x-velocity', '-maxvx', type=int, default=2, 
+    parser.add_argument('--max-x-velocity', '-mvx', type=int, default=2, 
         help='The maximum member x velocity')
-    parser.add_argument('--max-y-velocity', '-maxvy', type=int, default=1, 
+    parser.add_argument('--max-y-velocity', '-mvy', type=int, default=1, 
         help='The maximum member y velocity')
     parser.add_argument('--vary-v', '-vv', type=bool, default=True,
         help='Set true to allow different max velocities')
