@@ -44,58 +44,59 @@ point_count = 12 # number of elements to animate
 # Generate an array containing count random point x/y tuples
 # within the bounds of the canvas dimensions 'dim'.
 def generate_points(dim, count):
-	points = []
-	for i in range(count):
-		p = Point(randrange(dim.x), randrange(dim.y))
-		points.append(p)
+    points = []
+    for i in range(count):
+        p = Point(randrange(dim.x), randrange(dim.y))
+        points.append(p)
 
-	return(points)
+    return(points)
 
 # Fix provided point 'p' so that it is with min and max bounds.
 def bound_point(minp, maxp, p):
-	if(p.x < minp.x):  p = Point(minp.x, p.y)
-	if(p.x >= maxp.x): p = Point(maxp.x - 1, p.y)
-	if(p.y < minp.y):  p = Point(p.x, minp.y)
-	if(p.y >= maxp.y): p = Point(p.x, maxp.y - 1)
+    if(p.x < minp.x):  p = Point(minp.x, p.y)
+    if(p.x >= maxp.x): p = Point(maxp.x - 1, p.y)
+    if(p.y < minp.y):  p = Point(p.x, minp.y)
+    if(p.y >= maxp.y): p = Point(p.x, maxp.y - 1)
 
-	return p
+    return p
 
 # Given canvas dimensions and a point, perturb the point's x/y location.
 def update_point(dim, p):
-	delta = Point(randrange(3) - 1, randrange(3) - 1)
-	p = bound_point(zero, dim, Point(p.x + delta.x, p.y + delta.y))
+    delta = Point(randrange(3) - 1, randrange(3) - 1)
+    p = bound_point(zero, dim, Point(p.x + delta.x, p.y + delta.y))
 
-	return(p)
+    return(p)
 
 # Given canvas dimensions and a set of points, generate a new set of points.
 def update_points(dim, points):
-	new_points = []
-	for p in points:
-		new_points.append(update_point(dim, p))
-		
-	return(new_points)
+    new_points = []
+    for p in points:
+        new_points.append(update_point(dim, p))
+
+    return(new_points)
 
 
 ## main
 def main():
-	# setup the LED port and device
-	serial = spi(port=0, device=0, gpio=noop())
-	device = led(serial, cascaded=n,
-				 block_orientation=block_orientation,
-				 rotate=rotate,
-				 blocks_arranged_in_reverse_order=inreverse)
-	device.contrast(intensity)
+    # setup the LED port and device
+    serial = spi(port=0, device=0, gpio=noop())
+    device = led(serial, cascaded=n,
+                 block_orientation=block_orientation,
+                 rotate=rotate,
+                 blocks_arranged_in_reverse_order=inreverse)
+    device.contrast(intensity)
 
-	# generate points
-	points = generate_points(dimensions, point_count)
+    # generate points
+    points = generate_points(dimensions, point_count)
 
-	# animate
-	while(True):
-		points = update_points(dimensions, points)
-		with canvas(device) as draw:
-			for p in points:
-				draw.point(p, fill='White') # fill='color')
-				
-		time.sleep(delay)
+    # animate
+    while(True):
+        points = update_points(dimensions, points)
+        with canvas(device) as draw:
+            for p in points:
+                draw.point(p, fill='White') # fill='color')
 
-main()		
+        time.sleep(delay)
+
+main()
+

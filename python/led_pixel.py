@@ -15,7 +15,6 @@
 # http://www.mozilla.org/NPL/MPL-1.1.txt
 #
 import time
-
 from luma.core.interface.serial import spi, noop
 from luma.led_matrix.device import max7219 as led
 from luma.core.render import canvas
@@ -33,23 +32,23 @@ h = 8 # pixel height
 # setup the port and LED device
 serial = spi(port=0, device=0, gpio=noop())
 device = led(serial,
-			 cascaded=n,
-			 block_orientation=block_orientation,
-			 rotate=rotate,
-			 blocks_arranged_in_reverse_order=inreverse)
+             cascaded=n,
+             block_orientation=block_orientation,
+             rotate=rotate,
+             blocks_arranged_in_reverse_order=inreverse)
 device.contrast(intensity)
 
 # continuosly run the simulation/animation
 x = randrange(w); y = randrange(h)
 while(True):
-	dx = randrange(3) - 1; dy = randrange(3) - 1
-	x += dx; y += dy
-	if(y < 0):  y = 0
-	if(x < 0):  x = 0
-	if(x >= w):	x = w - 1
-	if(y >= h):	y = h - 1
-		
-	with canvas(device) as draw:
-		draw.point((x, y), fill=True)
-		
-	time.sleep(delay)
+    dx = randrange(3) - 1; dy = randrange(3) - 1
+    x += dx; y += dy
+    if(y < 0):  y = 0
+    if(x < 0):  x = 0
+    if(x >= w): x = w - 1
+    if(y >= h): y = h - 1
+
+    with canvas(device) as draw:
+        draw.point((x, y), fill=True)
+
+    time.sleep(delay)

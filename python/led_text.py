@@ -17,16 +17,16 @@ font=LCD_FONT
 serial = spi(port=0, device=0, gpio=noop())
 device = led(serial, cascaded=n, block_orientation=block_orientation, rotate=rotate, blocks_arranged_in_reverse_order=inreverse)
 device.contrast(intensity)
-			
+
 parser = argparse.ArgumentParser(description='led_display arguments',
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("msg", help="display the string you use here")
 args = parser.parse_args()
 msg = args.msg
-	
+
 show_message(device,
-			 msg,
-			 fill='White', # or fill='color'
-			 font=proportional(font),
-			 scroll_delay=delay)
+             msg,
+             fill='White', # or fill='color'
+             font=proportional(font),
+             scroll_delay=delay)
