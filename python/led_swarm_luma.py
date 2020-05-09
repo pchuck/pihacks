@@ -60,7 +60,7 @@ exec(compile(source=open(fullpath + '/fireflies.py').read(),
 # in the canvas/draw/point primitive syntax.
 #
 class FireflyRendererLed_Luma(object):
-    def __init__(self, canvas, device, bounds, fireflies, color, **kwargs):
+    def __init__(self, canvas, device, bounds, fireflies, color):
         self.canvas = canvas
         self.device = device
         self.color = color
@@ -106,11 +106,10 @@ def init_device(device, n, block_orientation, rotate, inreverse, intensity):
 #
 # initiate the device and orchestrate the swarm animation 
 #
-def swarm(device, bounds, count, maxv, varyv, delay, color, **kwargs):
+def swarm(device, bounds, count, maxv, varyv, delay, color):
     # create the fireflies and renderer
     ffs = Fireflies(bounds, count, maxv, varyv)
-    renderer = FireflyRendererLed_Luma(canvas, device, bounds, ffs, color,
-                                       **kwargs)
+    renderer = FireflyRendererLed_Luma(canvas, device, bounds, ffs, color)
     while(True):
         deque(map(lambda firefly: firefly.move(), ffs.flies))
         renderer.render()
