@@ -15,12 +15,24 @@
 # Run with '--help' to see the many options related to your specific panel(s),
 # setup, resolution, orientation, etc.
 #
-# Typical SPI to RPi GPIO wiring (e.g. MAX7219)
+# Typical SPI to RPi GPIO matrix wiring (e.g. MAX7219)
 #   p1 VCC -> RPi p2 5V0
 #   p2 GND -> RPi p6 GND
 #   p3 DIN -> RPi p19 GPIO 10 (MOSI)
 #   p4 CS ->  RPi p24 GPIO 8 (SPI CE0)
 #   p5 CLK -> RPi p23 GPIO 11 (SPI CLK)
+#
+# Typical SPI to RPi GPIO lcd wiring (e.g. ILI9341)
+#   p1 VCC -> RPi p1 3V3
+#   p2 GND -> RPi p6 GND
+#   p3 CS  -> RPi p24 GPIO 8 (SPI CE0)
+#   p4 RST -> RPi p18 GPIO 24
+#   p5 DC  -> RPi p16 GPIO 23
+#   p6 MOSI -> RPi p19 GPIO 10 (MOSI)
+#   p7 SCK -> RPi p23 GPIO 11 (SCLK)
+#   p8 LED -> RPi p12 GPIO 18
+# note: without support for touchscreen, leave MISO disconnected.
+#
 #
 # Typical I2C to RPi GPIO wiring (e.g. SSD1306)
 #   p1 GND -> RPi p6 GND
@@ -30,6 +42,7 @@
 # 
 # This version uses the luma libraries: luma.core, luma.led-matrix
 # For the SSD1306, luma.oled is also required.
+# For the ILI9341, luma.lcd is also required.
 #
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
