@@ -89,11 +89,22 @@ def init_device(device, n, block_orientation, rotate, inreverse, intensity):
                      rotate=rotate, blocks_arranged_in_reverse_order=inreverse)
         device.contrast(intensity)
 
+    # ili9341, via SPI
+    elif(device.lower() == 'ili9341'):
+        from luma.core.interface.serial import spi, noop
+        from luma.lcd.device import ili9341 as lcd
+        serial = spi(port=0, device=0, gpio_DC=23, gpio_RST=24,
+                     bus_speed_hz=32000000)
+        device = lcd(serial, gpio_LIGHT=18, active_low=False)
+        # , pwm_frequency=50) # this appears to be broken
+        device.backlight(True)
+        device.clear()
+
     # ssd1306, via I2C
     elif(device.lower() == 'ssd1306'): 
         from luma.core.interface.serial import i2c
         from luma.oled.device import ssd1306 as led
-        
+       
         serial = i2c(port=1, address=0x3C)
         device = led(serial)
 
@@ -123,7 +134,7 @@ if __name__ == "__main__":
 
     # hardware constants
     parser.add_argument('--device', '-dv', type=str, default='max7219',
-        choices=['max7219', 'ssd1306'],
+        choices=['max7219', 'ssd1306', 'ili9341'],
         help='The type of device')
     parser.add_argument('--cascaded', '-n', type=int, default=1,
         help='Number of cascaded LED matrices (usu. max7219)')
