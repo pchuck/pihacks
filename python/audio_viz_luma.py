@@ -12,13 +12,11 @@
 # Distributed under the Mozilla Public License
 # http://www.mozilla.org/NPL/MPL-1.1.txt
 #
+import sys
+from random import randrange
 import pyaudio
 import wave
-from random import randrange
-
 from luma.core.render import canvas
-from luma.core.interface.serial import spi, noop
-from luma.led_matrix.device import max7219 as led
 
 
 # init audio
@@ -30,35 +28,66 @@ def init_audio(resolution, sample_rate, channels, audio_index, chunk_size):
                         frames_per_buffer=chunk_size)
     return(audio, stream)
 
-# display device initialization
-def init_display(port, index, bus_speed, n, orientation, rotate, inreverse,
-                 intensity):
-    print('initializing display..')
-    serial = spi(port=port, device=index, gpio=noop(),
-                 bus_speed_hz=bus_speed)
-    device = led(serial, cascaded=n, block_orientation=orientation,
-                 rotate=rotate, blocks_arranged_in_reverse_order=inreverse)
-    device.contrast(intensity)
-    return(device)
+def rx(draw):
+    draw.line((0, 0, 32, 8), fill='White')
+
+#
+# initialize and return the new display device handle
+#
+def init_display(device, n, block_orientation, rotate, inreverse, intensity):
+    # max7219, via SPI
+    if(device.lower() == 'max7219'):
+        from luma.core.interface.serial import spi, noop
+        from luma.led_matrix.device import max7219 as led
+        
+        serial = spi(port=0, device=0, gpio=noop())
+        # spi_bus_speed = 8000000 # max: 32000000
+        device = led(serial, cascaded=n, block_orientation=block_orientation,
+                     rotate=rotate, blocks_arranged_in_reverse_order=inreverse)
+        device.contrast(intensity)
+
+    # ili9341, via SPI
+    elif(device.lower() == 'ili9341'):
+        from luma.core.interface.serial import spi, noop
+        from luma.lcd.device import ili9341 as lcd
+        serial = spi(port=0, device=0, gpio_DC=23, gpio_RST=24,
+                     bus_speed_hz=32000000)
+        device = lcd(serial, gpio_LIGHT=18, active_low=False)
+        # , pwm_frequency=50) # this appears to be broken
+        device.backlight(True)
+        device.clear()
+
+    # ssd1306, via I2C
+    elif(device.lower() == 'ssd1306'): 
+        from luma.core.interface.serial import i2c
+        from luma.oled.device import ssd1306 as led
+       
+        serial = i2c(port=1, address=0x3C)
+        device = led(serial)
+
+    else:
+        sys.exit('unsupported display device: ' + device)
+
+    return device
 
 # render
-def render(draw, trace):
+def render(draw, width, height, trace):
     for c in range(width):
-        # move origin below axis so that silence doesn't register
+        # offset origin below axis (-1) so that total silence doesn't register
         draw.line((c, -1, c, trace[c] - 1), fill='White')
 
 # stream/capture/viz
-def capture_and_viz(audio, stream, width, height):
+def capture_and_viz(v_dev, a_dev, a_stream, width, height):
     print('capturing and visualizing..')
     # max_level = 0 # track peak recorded level (for range validation)
     trace = list(range(width)) # current display trace
     col = 0 # current display column
-
+    
     # stream
     try:
         # continually read stream and append audio chunks to frame array
         while(True):
-            data = stream.read(chunk, exception_on_overflow = False)
+            data = a_stream.read(chunk, exception_on_overflow = False)
             val = int.from_bytes(data, "big") # extract a value
             level = val >> 12 # scale from 65K to 16
             # if(level > max_level): max_level = level
@@ -67,40 +96,35 @@ def capture_and_viz(audio, stream, width, height):
                 col += 1
                 if(col == width):
                     col = 0
-                    with canvas(device) as draw:
-                        render(draw, trace)
+                    with canvas(v_dev) as draw:
+                        render(draw, width, height, trace)
+                        #rx(draw)
 
     except KeyboardInterrupt:
         # print("max: " + str(max_level))
         print("cleaning up.. ")
-        stream.stop_stream()
-        stream.close()
-        audio.terminate()
+        a_stream.stop_stream()
+        a_stream.close()
+        a_dev.terminate()
         pass
 
+device = 'max7219'
+cascades = 4
+orientation = 90
+rotate = 0
+inreverse = True
+intensity = 1
+v_dev = init_display(device, cascades, orientation, rotate, inreverse,
+                     intensity)
 
 res = pyaudio.paInt16 # 16-bit resolution
 chans = 1 # mono
 samp_rate = 12000 # 12K rather than 44.1KHz is sufficient here
 chunk = 1 # rather than a, say, 4K buffer. capture 1 at a time
 audio_index = 2 # device index found by p.get_device_info_by_index(ii)
-
-(audio, stream) = init_audio(res, samp_rate, chans, audio_index, chunk)
-
-spi_port = 0
-spi_index = 0
-spi_bus_speed = 4000000 # max: 32000000
-cascades = 4
-orientation = 90
-rotate = 0
-inreverse = True
-intensity = 1
-
-device = init_display(spi_port, spi_index, spi_bus_speed,
-                     cascades, orientation, rotate, inreverse, intensity)
+(a_dev, a_stream) = init_audio(res, samp_rate, chans, audio_index, chunk)
 
 width = 32
 height = 8
-
-capture_and_viz(audio, stream, width, height)
+capture_and_viz(v_dev, a_dev, a_stream, width, height)
 
