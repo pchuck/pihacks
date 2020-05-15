@@ -24,7 +24,7 @@ import argparse
 import pyaudio
 import wave
 from luma.core.render import canvas
-
+from PIL import Image, ImageDraw
 
 # init audio
 def init_audio(resolution, sample_rate, channels, audio_id, chunk_size):
@@ -54,9 +54,10 @@ def init_display(device, n, block_orientation, rotate, inreverse, intensity):
     elif(device.lower() == 'ili9341'):
         from luma.core.interface.serial import spi, noop
         from luma.lcd.device import ili9341 as lcd
-        serial = spi(port=0, device=0, gpio_DC=23, gpio_RST=24,
+        # note: would be nice to parameterize other DC and RST wiring options
+        serial = spi(port=0, device=0, gpio_DC=24, gpio_RST=23,
                      bus_speed_hz=32000000)
-        device = lcd(serial, gpio_LIGHT=18, active_low=False)
+        device = lcd(serial, gpio_LIGHT=25, active_low=False)
         # , pwm_frequency=50) # this appears to be broken
         device.backlight(True)
         device.clear()
@@ -77,8 +78,7 @@ def init_display(device, n, block_orientation, rotate, inreverse, intensity):
 # render
 def render(draw, color, width, height, trace):
     for c in range(width):
-        # offset origin below axis (-1) so that total silence doesn't register
-        draw.line((c, -1, c, trace[c] - 1), fill=color)
+        draw.line((c, height, c, height - trace[c]), fill=color)
 
 # stream/capture/viz
 def capture_and_viz(v_dev, a_dev, a_stream,
@@ -99,9 +99,7 @@ def capture_and_viz(v_dev, a_dev, a_stream,
     rshift -= 1
     print("shifting audio samples by %d (2^%d audio -> %d display height).."
           % (rshift, ar, height))
-
     
-    # max_level = 0 # track peak recorded level (for range validation)
     trace = list(range(width)) # current display trace
     col = 0 # current display column in the display trace
     # stream
@@ -109,9 +107,10 @@ def capture_and_viz(v_dev, a_dev, a_stream,
         # continually read stream and append audio chunks to frame array
         while(True):
             data = a_stream.read(chunk, exception_on_overflow = False)
+            # for debugging, sim 16-bit results...
+            # data = [randrange(256), randrange(256) ]
             val = int.from_bytes(data, "big") # extract a value
             level = val >> rshift # e.g. scale from 65K to 16
-            # if(level > max_level): max_level = level
             if(level < height + 1):
                 trace[col] = level
                 col += 1

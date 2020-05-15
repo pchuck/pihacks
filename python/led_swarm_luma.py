@@ -30,7 +30,7 @@
 #   p5 DC  -> RPi p16 GPIO 23
 #   p6 MOSI -> RPi p19 GPIO 10 (MOSI)
 #   p7 SCK -> RPi p23 GPIO 11 (SCLK)
-#   p8 LED -> RPi p12 GPIO 18
+#   p8 LED -> RPi p22 GPIO 25 (was 18, conflicted w/ audio injector)
 # note: without support for touchscreen, leave MISO disconnected.
 #
 # Typical I2C to RPi GPIO wiring (e.g. SSD1306)
@@ -78,7 +78,7 @@ class FireflyRendererLed_Luma(object):
         self.ffs = fireflies
         for firefly in self.ffs.flies:
             firefly.p = Point(randrange(bounds.x), randrange(bounds.y))
-			
+
     # render everything on the canvas
     def render(self):
         with canvas(self.device) as draw:
@@ -104,9 +104,9 @@ def init_device(device, n, block_orientation, rotate, inreverse, intensity):
     elif(device.lower() == 'ili9341'):
         from luma.core.interface.serial import spi, noop
         from luma.lcd.device import ili9341 as lcd
-        serial = spi(port=0, device=0, gpio_DC=23, gpio_RST=24,
+        serial = spi(port=0, device=0, gpio_DC=24, gpio_RST=23,
                      bus_speed_hz=32000000)
-        device = lcd(serial, gpio_LIGHT=18, active_low=False)
+        device = lcd(serial, gpio_LIGHT=25, active_low=False)
         # , pwm_frequency=50) # this appears to be broken
         device.backlight(True)
         device.clear()
