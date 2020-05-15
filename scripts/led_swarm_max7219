@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# invocation of led_swarm_luma with parameters for a max7129 w/ 4 panels.
+# led_swarm_luma for a max7129 w/ 4 panels (32x8) and special orientation.
 #
-# Use higher x than y velocity, and 12 animated cells.
+# Use higher x than y peak velocity, and 12 animated cells.
 #
 $PIHOME/python/led_swarm_luma.py --device=max7219 --cascaded=4 --block-orientation=90 --reverse-order=True --intensity=1 -mvx 2 -mvy 1 --delay=0.1 32 8 12

@@ -4,4 +4,4 @@
 #
 # Use higher x than y peak velocity, and 20 animated cells.
 #
-python/led_swarm_luma.py --device=ili9341 --color yellow --delay 0 -mvx 8 -mvy 6 320 240 20
+$PIHOME/python/led_swarm_luma.py --device=ili9341 --color yellow --delay 0 -mvx 8 -mvy 6 320 240 20
