@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# audio_viz_luma for a max7129 w/ 4 panels (32x8) and special orientation.
+#
+$PIHOME/python/audio_viz_luma.py --device=max7219 --cascaded=4 --block-orientation=90 --reverse-order=True --intensity=1 32 8
