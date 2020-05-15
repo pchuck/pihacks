@@ -33,7 +33,6 @@
 #   p8 LED -> RPi p12 GPIO 18
 # note: without support for touchscreen, leave MISO disconnected.
 #
-#
 # Typical I2C to RPi GPIO wiring (e.g. SSD1306)
 #   p1 GND -> RPi p6 GND
 #   p2 VCC -> RPi p2 5V0
@@ -73,8 +72,7 @@ exec(compile(source=open(fullpath + '/fireflies.py').read(),
 # in the canvas/draw/point primitive syntax.
 #
 class FireflyRendererLed_Luma(object):
-    def __init__(self, canvas, device, bounds, fireflies, color):
-        self.canvas = canvas
+    def __init__(self, device, bounds, fireflies, color):
         self.device = device
         self.color = color
         self.ffs = fireflies
@@ -83,7 +81,7 @@ class FireflyRendererLed_Luma(object):
 			
     # render everything on the canvas
     def render(self):
-        with self.canvas(self.device) as draw:
+        with canvas(self.device) as draw:
             for firefly in self.ffs.flies:
                 draw.point(firefly.p, fill=self.color)
 
@@ -133,7 +131,7 @@ def init_device(device, n, block_orientation, rotate, inreverse, intensity):
 def swarm(device, bounds, count, maxv, varyv, delay, color):
     # create the fireflies and renderer
     ffs = Fireflies(bounds, count, maxv, varyv)
-    renderer = FireflyRendererLed_Luma(canvas, device, bounds, ffs, color)
+    renderer = FireflyRendererLed_Luma(device, bounds, ffs, color)
     while(True):
         deque(map(lambda firefly: firefly.move(), ffs.flies))
         renderer.render()
