@@ -84,7 +84,6 @@ def render(draw, color, width, height, trace, sideways=False):
         for c in range(width):
             draw.line((c, height, c, height - trace[c]), fill=color)
 
-
 # stream/capture/viz
 def capture_and_viz(v_dev, a_dev, a_stream,
                     ar, # audio resolution (e.g. 16-bit)
@@ -158,13 +157,16 @@ if __name__ == "__main__":
         help='Set to true if blocks are in reverse order')
     parser.add_argument('--intensity', '-i', type=int, default=128,
         help='The intensity of the LED output (from 0..255)')
+    # visualization options
     parser.add_argument('--color', '-c', type=str, default='White',
         help='The color of the display (if applicable)')
-    parser.add_argument('--audio_id', '-aid', type=int, default=2,
-        help='The alsa device id of the microphone or sampling device')
-    # required positional arguments
     parser.add_argument('--sideways', '-s', type=bool, default=False,
         help='Whether to draw the visualization \"sidways\"')
+    parser.add_argument('--audio-id', '-aid', type=int, default=0,
+        help='The alsa device id of the microphone or sampling device')
+    parser.add_argument('--sample-rate', '-sr', type=int, default=48000,
+        help='The audio sample rate in Hz')
+    # required positional arguments
     parser.add_argument('x', type=int, # required!
         help='The x resolution of the display/matrix')
     parser.add_argument('y', type=int, # required!
@@ -181,9 +183,9 @@ if __name__ == "__main__":
 
         ar, ares = 16, pyaudio.paInt16 # audio resolution, in bits
         chans = 1 # mono
-        srate = 12000 # sample rate, 12K rather than 44.1KHz is sufficient here
-        chunk = 1 # rather than a, say, 4K buffer. capture 1 at a time
+        chunk = 1 # rather than, say, a 4K buffer, capture 1 at a time
         aid = args.audio_id # use p.get_device_info_by_index() to find
+        srate = args.sample_rate # sample rate in Hz
         (a_dev, a_stream) = init_audio(ares, srate, chans, aid, chunk)
 
         # process

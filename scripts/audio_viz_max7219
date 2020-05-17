@@ -2,4 +2,16 @@
 #
 # audio_viz_luma for a max7129 w/ 4 panels (32x8) and special orientation.
 #
-$PIHOME/python/audio_viz_luma.py --device=max7219 --cascaded=4 --block-orientation=90 --reverse-order=True --intensity=1 32 8
+
+# for audio injector hat (on audio-id=2), also set/adjust:
+#   % amixer sset 'Input Mux' 'Mic'
+#   % amixer sset 'Mic' toggle
+#   % amixer sset 'Mic' 300
+#
+#$PIHOME/python/audio_viz_luma.py --device=max7219 --cascaded=4 --block-orientation=90 --reverse-order=True --audio-id=2 --sample-rate=12000 --intensity=64 32 8
+
+# for pluggable usb device (on audio-id 0), with sensitivity adjustments:
+#   % amixer sset 'Mic Boost' 1
+#
+$PIHOME/python/audio_viz_luma.py --device=max7219 --cascaded=4 --block-orientation=90 --reverse-order=True --audio-id=0 --sample-rate=48000 --intensity=64 32 8
+
