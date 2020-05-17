@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# invocation of lcd_leds_dht 
+#
+$PIHOME/python/lcd_leds_dht.py
