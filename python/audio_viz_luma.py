@@ -76,26 +76,36 @@ def init_display(device, n, block_orientation, rotate, inreverse, intensity):
     return device
 
 # render
-def render(draw, color, width, height, trace):
-    for c in range(width):
-        draw.line((c, height, c, height - trace[c]), fill=color)
+def render(draw, color, width, height, trace, sideways=False):
+    if(sideways):
+        for c in range(width):
+            draw.line((height, c, height - trace[c], c), fill=color)
+    else:
+        for c in range(width):
+            draw.line((c, height, c, height - trace[c]), fill=color)
+
 
 # stream/capture/viz
 def capture_and_viz(v_dev, a_dev, a_stream,
                     ar, # audio resolution (e.g. 16-bit)
-                    color, width, height):
-    print('capturing and visualizing..')
-    # compute the number of bits in the height resolution
-    vr = math.log(height) / math.log(2) # solving 2^vr = height, for vr
+                    color, width, height, sideways=False):
 
+    # whether the visualization is rotated 90 degrees; width/height swapped
+    if(sideways is True):
+        t = width; width = height; height = t
+        
+    print('capturing and visualizing..')
+    # compute the number of bits in the height (or width) resolution
+    vr = math.log(height) / math.log(2) # solving 2^vr = height, for vr
+    
     # sound to video scaling
     # the number of bits to shift an audio value to get a video height value
     # e.g. diff between 'ar' (audio resolution) and 'vr' (height 'resolution')
     rshift = int(ar - vr)
     
     # shift one less bit so that the display is more sensitive
-    # note: this may need to change based on microphone sensitivity,
-    # but seems to yield aesthetic results, so far
+    # note: this may need to change based on microphone sensitivity
+    # or gain, but seems to yield aesthetic results, so far
     rshift -= 1
     print("shifting audio samples by %d (2^%d audio -> %d display height).."
           % (rshift, ar, height))
@@ -107,8 +117,8 @@ def capture_and_viz(v_dev, a_dev, a_stream,
         # continually read stream and append audio chunks to frame array
         while(True):
             data = a_stream.read(chunk, exception_on_overflow = False)
-            # for debugging, sim 16-bit results...
-            # data = [randrange(256), randrange(256) ]
+            # (for debugging, sim 16-bit results)
+            #   data = [randrange(256), randrange(256) ]
             val = int.from_bytes(data, "big") # extract a value
             level = val >> rshift # e.g. scale from 65K to 16
             if(level < height + 1):
@@ -117,10 +127,9 @@ def capture_and_viz(v_dev, a_dev, a_stream,
                 if(col == width):
                     col = 0
                     with canvas(v_dev) as draw:
-                        render(draw, color, width, height, trace)
+                        render(draw, color, width, height, trace, sideways)
 
     except KeyboardInterrupt:
-        # print("max: " + str(max_level))
         print("cleaning up.. ")
         a_stream.stop_stream()
         a_stream.close()
@@ -154,6 +163,8 @@ if __name__ == "__main__":
     parser.add_argument('--audio_id', '-aid', type=int, default=2,
         help='The alsa device id of the microphone or sampling device')
     # required positional arguments
+    parser.add_argument('--sideways', '-s', type=bool, default=False,
+        help='Whether to draw the visualization \"sidways\"')
     parser.add_argument('x', type=int, # required!
         help='The x resolution of the display/matrix')
     parser.add_argument('y', type=int, # required!
@@ -176,7 +187,8 @@ if __name__ == "__main__":
         (a_dev, a_stream) = init_audio(ares, srate, chans, aid, chunk)
 
         # process
-        capture_and_viz(v_dev, a_dev, a_stream, ar, args.color, args.x, args.y)
+        capture_and_viz(v_dev, a_dev, a_stream, ar, args.color, args.x, args.y,
+                        sideways=args.sideways)
 
         
     except KeyboardInterrupt:
