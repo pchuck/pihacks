@@ -4,4 +4,4 @@
 #
 # Use higher x than y peak velocity, and 10 animated cells
 #
-python/led_swarm_luma.py --device=ssd1306 --delay=0 -mvx 6 -mvy 3 128 64 10
+$PIHOME/python/led_swarm_luma.py --device=ssd1306 --delay=0 -mvx 6 -mvy 3 128 64 10
