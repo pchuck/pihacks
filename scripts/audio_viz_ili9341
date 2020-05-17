@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# audio_viz_luma for an ili9341
+#
+$PIHOME/python/audio_viz_luma.py --device=ili9341 --color=yellow 320 240
