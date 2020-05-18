@@ -1,231 +1,121 @@
 #!/usr/bin/env python3
 #
-# lcd_leds_dht.py
-#
 # Status panel using LCD1602 (w/PCF8574 i2c), GPIO driven LED's and
 # DHT humidity temperature sensor to continually display information
 # about the system, health and its ambient environment.
 #
 # note: requires adafruit-circuitpython-dht, not Adafruit_DHT, also libgpiod2
-# (pin numbering is BCM, one of the included libs is overriding)
-# also, requires PCF8574 and Adafruit_LCD1602 to drive the LCD1602
+# (pin numbering is BOARD not BCM, one of the included libs is overriding)
 #
-# Copyright (C) 2020, Patrick Charles
-# Distributed under the Mozilla Public License
-# http://www.mozilla.org/NPL/MPL-1.1.txt
-#
-import os
 import socket
-from time import sleep, strftime
-from datetime import datetime
-
-import RPi.GPIO as GPIO
-from PCF8574 import PCF8574_GPIO
-from Adafruit_LCD1602 import Adafruit_CharLCD
-import adafruit_dht
+from time import sleep
+import argparse
+import ultrametrics_rpi as umr
 
 
-# LCD wiring - RPi (physical)
-#   1 - GND - GND  (1)
-#   2 - VCC - 5V   (4)
-#   3 - SDA - SDA1 (3)
-#   4 - SCL - SCL1 (5)
+# get current ip for later comparison in runtime checks
+def get_ip():
+    return socket.gethostbyname(socket.gethostname())
 
-# LED wiring - GPIO bcm
-led_red = 23
-led_ylw = 27
-led_grn = 24
-led_blu = 22
-
-# DHT wiring - GPIO bcm
-DHT_PIN = 4
-
-# other constants
-expected_ip = '10.0.2.97'
-
-
-# dht
-def init_dht():
-    dht_device = adafruit_dht.DHT11(DHT_PIN)
-    return dht_device
-    
-# lcd
-def init_lcd():
-    PCF8574_address = 0x27  # I2C address of the PCF8574 chip.
-    PCF8574A_address = 0x3F  # I2C address of the PCF8574A chip.
-
-    print('looking for LCD on i2c bus')
-    try:
-        print('trying address ' + str(PCF8574_address) + '.. ' ,
-              end='', flush=True)
-        mcp = PCF8574_GPIO(PCF8574_address) # PCF8574 GPIO adapter
-    except:
-        print('not found')
-        try:
-            print('trying address ' + str(PCF8574A_address) + '.. ',
-                  end='', flush=True)
-            mcp = PCF8574_GPIO(PCF8574A_address)
-        except:
-            print('I2C error')
-            exit(1)
-    print('found!')
-
-    # create LCD and pass in MCP GPIO adapter
-    lcd = Adafruit_CharLCD(pin_rs=0,
-                           pin_e=2,
-                           pins_db=[4, 5, 6, 7],
-                           GPIO=mcp)
-
-    mcp.output(3, 1) # turn on LCD backlight
-    lcd.begin(16, 2) # set number of LCD lines and columns
-    lcd.message('initializing...')
-
-    return(lcd, mcp)
-    
-# leds
-def init_leds():
-    GPIO.setwarnings(False)
-    led_pins = [led_red, led_ylw, led_grn, led_blu]
-    print('using GPIO pins to drive LEDs: ', end='', flush=True)
-    for pin in led_pins: # initialize led pins
-        GPIO.setup(pin, GPIO.OUT)
-        print('%d ' % pin, end='', flush=True)
-        GPIO.output(pin, GPIO.HIGH) ; sleep(0.1)
-        GPIO.output(pin, GPIO.LOW)
-    print('\n')
-    return(led_pins)
-
-# read hostname
-def get_hostname():
-    cmd = os.popen('hostname').read()
-    return cmd
-
-# read GPU temperature
-def get_gpu_temp():
-    cmd = os.popen('vcgencmd measure_temp').read()
-    cmd = cmd.split('\'C')[0] # remove the celcius designator
-    l = []
-    for t in cmd.split('='):
-        try:
-            l.append(float(t))
-        except ValueError:
-            pass
-    gpu = l[0]
-    return gpu
-
-# read CPU temperature
-def get_cpu_temp():
-    tmp = open('/sys/class/thermal/thermal_zone0/temp')
-    cpu = tmp.read()
-    tmp.close()
-    return float(cpu) / 1000
-
-# load
-def get_load():
-    return os.getloadavg() # 1, 5, 15min load
-
-# uptime
-def get_uptime():
-    with open('/proc/uptime', 'r') as f:
-        ts = float(f.readline().split()[0])
-    days = int(ts / 86400)
-    hours = int((ts - days * 86400) / 3600)
-    minutes = int((ts - days * 86400 - hours * 3600) / 60)
-    seconds = int(ts - days * 86400 - hours * 3600 - minutes * 60)
-    return(days, hours, minutes, seconds)
-
-def get_dht_data(dht):
-    try:
-        temperature_c = dht.temperature
-        temperature_f = temperature_c * (9 / 5) + 32
-        humidity = dht.humidity
-    except RuntimeError:
-        # dht doesn't always succeed. continue.
-        return(None, None, None)
-
-    return(temperature_c, temperature_f, humidity)
-
-
-# read system time and format as a string for display
-def get_time_now():
-    return datetime.now().strftime('%H:%M:%S %z')
-
-# light leds based on specified thresholds    
-def update_leds(v, t1, t2):
-    if(v < t1):               GPIO.output(led_grn, GPIO.HIGH)
-    elif(v >= t1 and v < t2): GPIO.output(led_ylw, GPIO.HIGH)
-    elif(v >= t2):            GPIO.output(led_red, GPIO.HIGH)
-
-# clear all leds
-def clear_leds(leds):
-    GPIO.output(leds, GPIO.LOW)
-
-# cleanup
-def destroy(mcp, lcd):
-    mcp.output(3, 0)
-    lcd.clear()
-    
 # main
-def main(lcd, mcp, leds, dht):
+def main(fld, lcd, leds, dht, expected_ip):
     while(True):         
         # time
-        lcd.message('   ' + get_time_now())
-        GPIO.output(led_blu, GPIO.HIGH)
-        sleep(5) ; lcd.clear() ; clear_leds(leds)
+        lcd.display(umr.get_time_now())
+        leds.light('blue')
+        sleep(5) ; leds.clear()
 
         # hostname/ip
-        hostname = get_hostname()
+        hostname = umr.get_hostname()
         try:
-            ip = socket.gethostbyname(socket.gethostname())
+            ip = get_ip()
             if(ip == expected_ip):
-                GPIO.output(led_grn, GPIO.HIGH)
+                leds.light('green')
             else:
-                GPIO.output(led_red, GPIO.HIGH)
-            lcd.message('host: ' + hostname + '\nip: ' + ip)
-        except socket.gaierror: # flag red if gethostbyname fails
-            GPIO.output(led_red, GPIO.HIGH)
-            lcd.message('host: ' + hostname + '\nip: (gaierror)')
-        sleep(5) ; lcd.clear() ; clear_leds(leds)
+                leds.light('red')
+            lcd.display('host: ' + hostname + '\nip: ' + ip)
+        except socket.gaierror: 
+            leds.light('red') # flag red if gethostbyname fails
+            lcd.display('host: ' + hostname + '\nip: (gaierror)')
+        sleep(5) ; leds.clear()
 
         # uptime
-        (d, h, m, s) = get_uptime()
-        lcd.message('uptime: \n%dd, %02d:%02d:%02d' % (d, h, m, s))
-        GPIO.output(led_blu, GPIO.HIGH)
-        sleep(5) ; lcd.clear() ; clear_leds(leds)
+        (d, h, m, s) = umr.get_uptime()
+        lcd.display('uptime: \n%dd, %02d:%02d:%02d' % (d, h, m, s))
+        leds.light('blue'); sleep(5) ; leds.clear()
         
         # load
-        (l1, l5, l15) = get_load()
-        lcd.message('load 1/5/15min:\n%2.2f/%2.2f/%2.2f' % (l1, l5, l15))
-        update_leds(l1, 0.5, 1.0)
-        sleep(5) ; lcd.clear() ; clear_leds(leds)
+        (l1, l5, l15) = umr.get_load()
+        lcd.display('load 1/5/15min:\n%2.2f/%2.2f/%2.2f' % (l1, l5, l15))
+        fld.display('load - %2.2f' % l1)
+        fld.display('load5 - %2.2f' % l5)
+        fld.display('load15 - %2.2f' % l15)
+        leds.light_threshold(l1, 1.5, 3.0); sleep(5) ; leds.clear()
 
         # cpu / gpu
-        tc = get_cpu_temp()
-        tg = get_gpu_temp()
-        lcd.message('cpu: %.2f C\ngpu: %.2f C' % (tc, tg))
-        update_leds(tc, 50, 75)
-        update_leds(tg, 55, 80)
-        sleep(5) ; lcd.clear() ; clear_leds(leds)
+        tc, tg = umr.get_cpu_temp(), umr.get_gpu_temp()
+        lcd.display('cpu: %.2f C\ngpu: %.2f C' % (tc, tg))
+        fld.display('cpu - %.2fC' % tc)
+        fld.display('gpu - %.2fC' % tg)
+        leds.light_threshold(tc, 60, 75)
+        leds.light_threshold(tg, 65, 80)
+        sleep(5) ; leds.clear()
 
         # dht
-        (tc, tf, h) = get_dht_data(dht)
+        (tc, tf, h) = dht.sense_data()
         if((tf is not None) and (h is not None)):
-            lcd.message('ambient: %.1f F\nhumidity: %.1f' % (tf, h))
-            update_leds(tf, 65, 85)
+            lcd.display('ambient: %.1f F\nhumidity: %.1f' % (tf, h))
+            fld.display('ambient - %.1fF' % tf)
+            fld.display('humidity - %.1f' % h)
+            leds.light_threshold(tf, 85, 95)
+            leds.light_threshold(h, 60, 90)
         else:
-            lcd.message('ambient: Err\nhumidity: Err')
-            GPIO.output(led_red, GPIO.HIGH)
-        sleep(5) ; lcd.clear() ; clear_leds(leds)
+            lcd.display('ambient: Err\nhumidity: Err')
+            leds.light('red')
+        sleep(5) ; leds.clear()
 
 if __name__ == '__main__':
-    print('initializing.. ')
-    lcd, mcp = init_lcd()
-    leds = init_leds()
-    dht = init_dht()
+    parser = argparse.ArgumentParser(description='lcd_leds_dht arguments',
+                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+    # required arguments, the bcm pin numbers of...
+    parser.add_argument('d', type=int, 
+        help='The data pin of the dht11')
+    parser.add_argument('b', type=int, 
+        help='The signal pin to the first status led')
+    parser.add_argument('g', type=int, 
+        help='The signal pin to the second status led')
+    parser.add_argument('y', type=int, 
+        help='The signal pin to the third status led')
+    parser.add_argument('r', type=int, 
+        help='The signal pin to the last status led')
+
+    args = parser.parse_args()
+
+    # LED wiring - colors and their associated pins
+    # status_leds() expects the pins to be in order of increasing 'severity'
+    colorpins = {
+        'blue': args.b,
+        'green': args.g,
+        'yellow': args.y,
+        'red': args.r
+    }
+
+    # DHT wiring - GPIO bcm
+    DHT_PIN = args.d
+
+    lcd = umr.LCD_dummy_display()
+    # lcd = umr.LCD1602_display(echo=False)
+    fld = umr.file_display('lcd_leds_dht_sensor.out')
+    lcd.display('initializing.. ')
+    leds = umr.status_leds(colorpins)
+    dht = umr.DHT11_device(DHT_PIN)
+
     try:
-        print('running.. ')
-        main(lcd, mcp, leds, dht)
+        lcd.display('running.. ')
+        expected_ip = get_ip()
+        main(fld, lcd, leds, dht, expected_ip)
     except KeyboardInterrupt:
-        clear_leds(leds)
-        destroy(mcp, lcd)
+        leds.clear()
+        lcd.destroy()
 
