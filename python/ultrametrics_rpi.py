@@ -9,8 +9,6 @@ from Adafruit_LCD1602 import Adafruit_CharLCD
 import adafruit_dht
 
 logging.basicConfig(level=logging.DEBUG)
-GPIO.setmode(GPIO.BCM) # all functions use BCM pin numbering
-GPIO.setwarnings(False)
 
 
 class status_leds():
@@ -24,6 +22,8 @@ class status_leds():
         
         self.colorpins = colorpins
         self.colors, self.pins = colorpins.keys(), colorpins.values()
+#        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
         logging.info('using GPIO pins to drive LEDs: ')
         # enable output and flash each pin in sequence
         for color, pin in colorpins.items(): 
@@ -58,7 +58,7 @@ class DHT11_device:
     """ dht11 temperature and humidity sensor wrapper
     """
     def __init__(self, pin):
-        self.dht = adafruit_dht.DHT11(pin)
+      self.dht = adafruit_dht.DHT11(pin)
 
     def sense_data(self):
         try:
@@ -164,7 +164,7 @@ class file_display(informal_data_display):
         self.file = open(filename, 'a')
         
     def display(self, message):
-        t = format('ts - %s, %s\n' % (get_timestamp_now(), message))
+        t = format('%s, %s\n' % (get_timestamp_now(), message))
         self.file.write(t)
         if(self.echo is True):
             logging.info(t)

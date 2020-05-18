@@ -47,16 +47,16 @@ def main(fld, lcd, leds, dht, expected_ip):
         # load
         (l1, l5, l15) = umr.get_load()
         lcd.display('load 1/5/15min:\n%2.2f/%2.2f/%2.2f' % (l1, l5, l15))
-        fld.display('load - %2.2f' % l1)
-        fld.display('load5 - %2.2f' % l5)
-        fld.display('load15 - %2.2f' % l15)
+        fld.display('load, %2.2f' % l1)
+        fld.display('load5, %2.2f' % l5)
+        fld.display('load15, %2.2f' % l15)
         leds.light_threshold(l1, 1.5, 3.0); sleep(5) ; leds.clear()
 
         # cpu / gpu
         tc, tg = umr.get_cpu_temp(), umr.get_gpu_temp()
         lcd.display('cpu: %.2f C\ngpu: %.2f C' % (tc, tg))
-        fld.display('cpu - %.2fC' % tc)
-        fld.display('gpu - %.2fC' % tg)
+        fld.display('cpu, %.2fC' % tc)
+        fld.display('gpu, %.2fC' % tg)
         leds.light_threshold(tc, 60, 75)
         leds.light_threshold(tg, 65, 80)
         sleep(5) ; leds.clear()
@@ -65,8 +65,8 @@ def main(fld, lcd, leds, dht, expected_ip):
         (tc, tf, h) = dht.sense_data()
         if((tf is not None) and (h is not None)):
             lcd.display('ambient: %.1f F\nhumidity: %.1f' % (tf, h))
-            fld.display('ambient - %.1fF' % tf)
-            fld.display('humidity - %.1f' % h)
+            fld.display('ambient, %.1fF' % tf)
+            fld.display('humidity, %.1f' % h)
             leds.light_threshold(tf, 85, 95)
             leds.light_threshold(h, 60, 90)
         else:
