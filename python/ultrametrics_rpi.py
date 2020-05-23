@@ -1,5 +1,9 @@
 # ultrametrics_rpi.py
 #
+# Copyright (C) 2020, Patrick Charles
+# Distributed under the Mozilla Public License
+# http://www.mozilla.org/NPL/MPL-1.1.txt
+#
 import logging
 import os
 import math
