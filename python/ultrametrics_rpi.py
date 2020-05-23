@@ -1,6 +1,9 @@
+# ultrametrics_rpi.py
+#
 import logging
 import os
 import math
+import socket
 from time import strftime, sleep
 from datetime import datetime
 import RPi.GPIO as GPIO
@@ -8,9 +11,18 @@ from luma.core.render import canvas
 
 """
   Classes for controlling Raspberry Pi GPIO devices
-    active_buzzer()
-    buzzer()
-    status_leds()
+    Buzzer - a passive buzzer component, with start() and stop()
+    ActiveBuzzer - an active buzzer component, with start() and stop()
+    StatusLeds - status lights controlled individually or by threshold
+    DHT11 - a temperature and humidity sensor that can be read
+    BasicDisplay - basic interface for displaying status text and graphs
+    LCD1602Display - an LCD that can display two lines of status
+    SSD1306Display - an OLED that can display multiple lines of status/graphs
+    LogDisplay - adheres to BasicDisplay interface and outputs to a logger
+    PrintDisplay - adheres to BasicDisplay interface and outputs to console
+    DummyDisplay - adheres to BasicDisplay interface with noop or console out
+    FileDisplay - adheres to BasicDisplay interface and writes to a data file
+    System - encapsulation of system with methods for interrogating state.
 """
 
 class ActiveBuzzer():
@@ -112,8 +124,8 @@ class DHT11:
 
         return(temperature_c, temperature_f, humidity)
     
-class InformalDataDisplay:
-    """ interface for displaying textual data on a display device
+class BasicDisplay:
+    """ an informal interface for displaying textual data on a display device
     """
     def clear(self):
         """clear the display"""
@@ -131,13 +143,13 @@ class InformalDataDisplay:
         """clean up the device"""
         pass
 
-class DummyDisplay(InformalDataDisplay):
+class DummyDisplay(BasicDisplay):
     """ a dummy implementation of display
     """
-    def display(self, message, bars=None):
+    def display(self, message, trace=None):
         print(message)
     
-class LCD1602Display(InformalDataDisplay):
+class LCD1602Display(BasicDisplay):
     """ implementation for displaying textual data on a display device
 
     Notes
@@ -182,7 +194,7 @@ class LCD1602Display(InformalDataDisplay):
     def clear(self):
         self.lcd.clear()
         
-    def display(self, message, bars=None):
+    def display(self, message, trace=None):
         self.lcd.clear()
         self.lcd.message(message)
         if(self.echo):
@@ -192,7 +204,7 @@ class LCD1602Display(InformalDataDisplay):
         self.mcp.output(3, 0)
         self.lcd.clear()
 
-class SSD1306Display(InformalDataDisplay):
+class SSD1306Display(BasicDisplay):
     """ implementation for displaying textual data on a display device
 
     Notes
@@ -226,40 +238,44 @@ class SSD1306Display(InformalDataDisplay):
     def clear(self):
         self.device.clear()
 
-    def barplot(self, draw, bars):
-        if(bars is not None and len(bars) > 0):
-            mxx = max(bars)
-            mnx = min(bars)
-            delta = mxx - mnx + 1
-            for xp in range(len(bars)):
-                draw.line((xp, self.y,
-                           xp, self.y - (bars[xp] - mnx) * self.bh / delta),
-                          fill=self.color)
+    def _graph(self, draw, trace):
+        """
+        auxiliary method invoked by display() when trace data is provided
+        for graphical display.
+        """
+        mxx = max(trace)
+        mnx = min(trace)
+        delta = mxx - mnx + 1
+        for xp in range(len(trace)):
+            draw.line((xp, self.y,
+                       xp, self.y - (trace[xp] - mnx) * self.bh / delta),
+                       fill=self.color)
         
-    def display(self, message, bars=None):
+    def display(self, message, trace=None):
         with canvas(self.device) as draw:
             draw.text((0, 0), message, fill=self.color, font=self.font)
-            self.barplot(draw, bars)
+            if(trace is not None and len(trace) > 0):
+                self._graph(draw, trace)
         if(self.echo):
             logging.info(message)
 
     def destroy(self):
         self.device.cleanup()
 
-class PrintDisplay(InformalDataDisplay):
+class PrintDisplay(BasicDisplay):
     """ implementation for displaying textual data on the console
     """
     def display(self, message):
         print(message)
 
-class LogDisplay(InformalDataDisplay):
+class LogDisplay(BasicDisplay):
     """ implementation for displaying textual data on the console
     """
     def display(self, message):
         logging.info(message)
 
 
-class FileDisplay(InformalDataDisplay):
+class FileDisplay(BasicDisplay):
     """ implementation for displaying textual data on the console
     """
     def __init__(self, filename, echo=False):
@@ -267,7 +283,7 @@ class FileDisplay(InformalDataDisplay):
         self.file = open(filename, 'a')
         
     def display(self, message):
-        t = format('%s, %s\n' % (get_timestamp_now(), message))
+        t = format('%s, %s\n' % (System.get_datetime(), message))
         self.file.write(t)
         if(self.echo):
             logging.info(t)
@@ -326,58 +342,81 @@ class OutputManager(object):
         The FFT is a fast implementation of the discrete Fourier transform:
         """
 
+class System:
+    """
+    An encapsulation of a system with static methods for reading its 
+    current state and attributes.
+    """
+    def __init__(self):
+        # record start info
+        self.datetime_start = get_datetime()
+        self.timestamp_start = get_timestamp()
 
+    # hostname
+    @staticmethod
+    def get_hostname():
+        return os.popen('hostname').read()
 
+    # ip
+    def get_ip():
+        return socket.gethostbyname(socket.gethostname())
 
-# read hostname
-def get_hostname():
-    cmd = os.popen('hostname').read()
-    return cmd
+    # gpu temperature
+    @staticmethod
+    def get_gpu_temp():
+        cmd = os.popen('vcgencmd measure_temp').read()
+        cmd = cmd.split('\'C')[0] # remove the celcius designator
+        l = []
+        for t in cmd.split('='):
+            try:
+                l.append(float(t))
+            except ValueError:
+                pass
+        gpu = l[0]
+        return gpu
+    
+    # CPU temperature
+    @staticmethod
+    def get_cpu_temp():
+        tmp = open('/sys/class/thermal/thermal_zone0/temp')
+        cpu = tmp.read()
+        tmp.close()
+        return float(cpu) / 1000.0
 
-# read GPU temperature
-def get_gpu_temp():
-    cmd = os.popen('vcgencmd measure_temp').read()
-    cmd = cmd.split('\'C')[0] # remove the celcius designator
-    l = []
-    for t in cmd.split('='):
-        try:
-            l.append(float(t))
-        except ValueError:
-            pass
-    gpu = l[0]
-    return gpu
+    # load
+    @staticmethod
+    def get_load():
+        return os.getloadavg() # 1, 5, 15min load
 
-# read CPU temperature
-def get_cpu_temp():
-    tmp = open('/sys/class/thermal/thermal_zone0/temp')
-    cpu = tmp.read()
-    tmp.close()
-    return float(cpu) / 1000.0
+    # load1 (non-tuple version useful as a passed function)
+    @staticmethod
+    def get_load1():
+        (l1, l5, l15) = os.getloadavg()
+        return l1
 
-# load
-def get_load():
-    return os.getloadavg() # 1, 5, 15min load
+    # uptime
+    @staticmethod
+    def get_uptime():
+        with open('/proc/uptime', 'r') as f:
+            ts = float(f.readline().split()[0])
+        days = int(ts / 86400)
+        hours = int((ts - days * 86400) / 3600)
+        minutes = int((ts - days * 86400 - hours * 3600) / 60)
+        seconds = int(ts - days * 86400 - hours * 3600 - minutes * 60)
+        return(days, hours, minutes, seconds)
 
-# load1 (non-tuple version useful as a passed function)
-def get_load1():
-    (l1, l5, l15) = os.getloadavg()
-    return l1
+    # read system time and format as a string for display
+    @staticmethod
+    def get_time():
+        return datetime.now().strftime('%H:%M:%S')
 
-# uptime
-def get_uptime():
-    with open('/proc/uptime', 'r') as f:
-        ts = float(f.readline().split()[0])
-    days = int(ts / 86400)
-    hours = int((ts - days * 86400) / 3600)
-    minutes = int((ts - days * 86400 - hours * 3600) / 60)
-    seconds = int(ts - days * 86400 - hours * 3600 - minutes * 60)
-    return(days, hours, minutes, seconds)
+    # generate the datetime stamp
+    @staticmethod
+    def get_datetime():
+        return '{:%Y-%m-%d %H:%M:%S}'.format(datetime.now())
 
-# read system time and format as a string for display
-def get_time_now():
-    return datetime.now().strftime('%H:%M:%S')
-
-# generate the current timestamp
-def get_timestamp_now():
-    return '{:%Y-%m-%d %H:%M:%S}'.format(datetime.now())
+    # generate the current timestamp
+    @staticmethod
+    def get_timestamp():
+        return datetime.now().timestamp()
 

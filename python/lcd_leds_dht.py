@@ -24,15 +24,15 @@ def get_ip():
 
 # update time display and status lights
 def update_time():
-    lcd.display(umr.get_time_now())
+    lcd.display(umr.System.get_time())
     leds.light('blue')
     sleep(PTIME * DTIME) ; leds.clear()
 
 # update hostname and ip display
 def update_hostname():
-    hostname = umr.get_hostname()
+    hostname = umr.System.get_hostname()
     try:
-        ip = get_ip()
+        ip = umr.System.get_ip()
         if(ip == expected_ip):
             leds.light('green')
         else:
@@ -45,7 +45,7 @@ def update_hostname():
 
 # update system uptime display and status lights
 def update_uptime():
-    (d, h, m, s) = umr.get_uptime()
+    (d, h, m, s) = umr.System.get_uptime()
     lcd.display('uptime: \n%dd %02d:%02d:%02d' % (d, h, m, s))
     leds.light('blue'); sleep(PTIME * DTIME) ; leds.clear()
 
@@ -93,19 +93,19 @@ def main(fld, lcd, leds, dht, expected_ip):
         update_uptime()
 
         # load
-        (l1, l1s) = update(umr.get_load1, 'load', '%2.2f', l1s,
+        (l1, l1s) = update(umr.System.get_load1, 'load', '%2.2f', l1s,
                            1.5, 3.0, clear=False)
         fld.display_formatted('load', '%2.2f', l1)
         leds.clear()
 
         # cpu
-        (tc, tcs) = update(umr.get_cpu_temp, 'cpu', '%.1f C', tcs,
+        (tc, tcs) = update(umr.System.get_cpu_temp, 'cpu', '%.1f C', tcs,
                            60, 75, clear=False)
         fld.display_formatted('cpu', '%.1f', tc)
         leds.clear()
 
         # gpu
-        (tg, tgs) = update(umr.get_gpu_temp, 'gpu', '%.1f C', tgs,
+        (tg, tgs) = update(umr.System.get_gpu_temp, 'gpu', '%.1f C', tgs,
                            65, 80, clear=False)
         fld.display_formatted('gpu', '%.1f', tg)
         leds.clear()
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     elif(display_type == 'ssd1306'):
         lcd = umr.SSD1306Display(echo=False)
     else:
-        lcd = lcd = umr.DummyDisplay()
+        lcd = umr.DummyDisplay()
 
     # write sensor readings to file
     fld = umr.FileDisplay('lcd_leds_dht_sensor.out')
