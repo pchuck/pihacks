@@ -1,17 +1,57 @@
 import logging
 import os
+import math
 from time import strftime, sleep
 from datetime import datetime
-
 import RPi.GPIO as GPIO
-from PCF8574 import PCF8574_GPIO
-from Adafruit_LCD1602 import Adafruit_CharLCD
-import adafruit_dht
+from luma.core.render import canvas
 
-logging.basicConfig(level=logging.DEBUG)
+"""
+  Classes for controlling Raspberry Pi GPIO devices
+    active_buzzer()
+    buzzer()
+    status_leds()
+"""
 
+class ActiveBuzzer():
+    """ wrapper for controlling an active buzzer
+    """
+    def __init__(self, pin):
+        self.pin = pin
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(pin, GPIO.OUT)
 
-class status_leds():
+    def start(self):
+        GPIO.output(self.pin, GPIO.HIGH)
+
+    def stop(self):
+        GPIO.output(self.pin, GPIO.LOW)
+
+class PassiveBuzzer():
+    """ wrapper for controlling a passive buzzer
+    """
+    def __init__(self, pin):
+        self.pin = pin
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(pin, GPIO.OUT)
+        self.pwm = GPIO.PWM(pin, 1)
+        self.pwm.start(0)
+        self.magnitude = 500
+        self.resonant = 2000
+        self.period = 0.001
+
+    def start(self):
+        self.pwm.start(50)
+        for x in range(0, 361):
+            sin_val = math.sin(x * (math.pi / 180.0))
+            tone_val = self.resonant + sin_val * self.magnitude
+            self.pwm.ChangeFrequency(tone_val)
+            sleep(self.period)
+
+    def stop(self):
+        self.pwm.stop()
+
+class StatusLeds():
     """ wrapper for controlling commonly used 4-led status bar
         used to indicate four relative levels of criticality
     """
@@ -22,7 +62,7 @@ class status_leds():
         
         self.colorpins = colorpins
         self.colors, self.pins = colorpins.keys(), colorpins.values()
-#        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         logging.info('using GPIO pins to drive LEDs: ')
         # enable output and flash each pin in sequence
@@ -54,11 +94,12 @@ class status_leds():
         """
         GPIO.output(list(self.colorpins.values()), GPIO.LOW)
 
-class DHT11_device:
+class DHT11:
     """ dht11 temperature and humidity sensor wrapper
     """
     def __init__(self, pin):
-      self.dht = adafruit_dht.DHT11(pin)
+        import adafruit_dht
+        self.dht = adafruit_dht.DHT11(pin)
 
     def sense_data(self):
         try:
@@ -71,7 +112,7 @@ class DHT11_device:
 
         return(temperature_c, temperature_f, humidity)
     
-class informal_data_display:
+class InformalDataDisplay:
     """ interface for displaying textual data on a display device
     """
     def clear(self):
@@ -80,17 +121,23 @@ class informal_data_display:
     def display(self, message):
         """display the message"""
         pass
+    def display_formatted(self, label, sformat, value):
+        if(value is not None):
+            self.display(label + ': ' + sformat % value)
+        else:
+            self.display(label + ': Error')
+            
     def destroy(self):
         """clean up the device"""
         pass
 
-class LCD_dummy_display(informal_data_display):
-    """ a dummy implementation of LCD1602 for testing/simulation
+class DummyDisplay(InformalDataDisplay):
+    """ a dummy implementation of display
     """
-    def display(self, message):
+    def display(self, message, bars=None):
         print(message)
     
-class LCD1602_display(informal_data_display):
+class LCD1602Display(InformalDataDisplay):
     """ implementation for displaying textual data on a display device
 
     Notes
@@ -101,8 +148,10 @@ class LCD1602_display(informal_data_display):
      3 - SDA - SDA1 (3)
      4 - SCL - SCL1 (5)
     """
-
     def __init__(self, echo=False):
+        from PCF8574 import PCF8574_GPIO
+        from Adafruit_LCD1602 import Adafruit_CharLCD
+
         self.echo = echo
         PCF8574_address = 0x27  # I2C address of the PCF8574 chip.
         PCF8574A_address = 0x3F  # I2C address of the PCF8574A chip.
@@ -133,30 +182,84 @@ class LCD1602_display(informal_data_display):
     def clear(self):
         self.lcd.clear()
         
-    def display(self, message):
+    def display(self, message, bars=None):
         self.lcd.clear()
         self.lcd.message(message)
-        if(self.echo is True):
+        if(self.echo):
             logging.info(message)
 
     def destroy(self):
         self.mcp.output(3, 0)
         self.lcd.clear()
 
-class print_display(informal_data_display):
+class SSD1306Display(InformalDataDisplay):
+    """ implementation for displaying textual data on a display device
+
+    Notes
+    -----
+    LCD wiring - RPi (physical)
+     1 - GND - GND  (1)
+     2 - VCC - 5V   (4)
+     3 - SDA - SDA1 (3)
+     4 - SCL - SCL1 (5)
+    """
+    def __init__(self, echo=False, height=32, bh=16,
+                 font=None, color='White', i2c_addr=0x3c):
+        from luma.core.interface.serial import i2c
+        from luma.oled.device import ssd1306 as led
+
+        logging.info('looking for OLED on i2c bus at %x' % i2c_addr)
+        serial = i2c(port=1, address=i2c_addr)
+        self.device = led(serial, height=height)
+        logging.info('OLED found')
+        self.device.clear()
+        self.echo = echo
+        self.font = font
+        self.color = color
+        self.x = self.device.width
+        self.y = self.device.height
+        self.bh = bh # height of bar region, in pixels
+        with canvas(self.device) as draw:
+            draw.text((0, 0), 'initializing..',
+                      fill=self.color, font=self.font)
+
+    def clear(self):
+        self.device.clear()
+
+    def barplot(self, draw, bars):
+        if(bars is not None and len(bars) > 0):
+            mxx = max(bars)
+            mnx = min(bars)
+            delta = mxx - mnx + 1
+            for xp in range(len(bars)):
+                draw.line((xp, self.y,
+                           xp, self.y - (bars[xp] - mnx) * self.bh / delta),
+                          fill=self.color)
+        
+    def display(self, message, bars=None):
+        with canvas(self.device) as draw:
+            draw.text((0, 0), message, fill=self.color, font=self.font)
+            self.barplot(draw, bars)
+        if(self.echo):
+            logging.info(message)
+
+    def destroy(self):
+        self.device.cleanup()
+
+class PrintDisplay(InformalDataDisplay):
     """ implementation for displaying textual data on the console
     """
     def display(self, message):
         print(message)
-        
-class log_display(informal_data_display):
+
+class LogDisplay(InformalDataDisplay):
     """ implementation for displaying textual data on the console
     """
-
     def display(self, message):
         logging.info(message)
 
-class file_display(informal_data_display):
+
+class FileDisplay(InformalDataDisplay):
     """ implementation for displaying textual data on the console
     """
     def __init__(self, filename, echo=False):
@@ -166,7 +269,7 @@ class file_display(informal_data_display):
     def display(self, message):
         t = format('%s, %s\n' % (get_timestamp_now(), message))
         self.file.write(t)
-        if(self.echo is True):
+        if(self.echo):
             logging.info(t)
 
     def destroy(self):
@@ -249,11 +352,16 @@ def get_cpu_temp():
     tmp = open('/sys/class/thermal/thermal_zone0/temp')
     cpu = tmp.read()
     tmp.close()
-    return float(cpu) / 1000
+    return float(cpu) / 1000.0
 
 # load
 def get_load():
     return os.getloadavg() # 1, 5, 15min load
+
+# load1 (non-tuple version useful as a passed function)
+def get_load1():
+    (l1, l5, l15) = os.getloadavg()
+    return l1
 
 # uptime
 def get_uptime():
@@ -272,3 +380,4 @@ def get_time_now():
 # generate the current timestamp
 def get_timestamp_now():
     return '{:%Y-%m-%d %H:%M:%S}'.format(datetime.now())
+
