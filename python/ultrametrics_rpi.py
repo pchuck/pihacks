@@ -140,6 +140,8 @@ class StatusLeds():
 
 class DHT11:
     """ dht11 temperature and humidity sensor wrapper
+    .. note:: requires adafruit-circuitpython-dht, not Adafruit_DHT,
+              also libgpiod2
     """
     def __init__(self, pin):
         """
@@ -435,7 +437,7 @@ class System:
         :return: The name of the system
         :rtype: str
         """
-        return os.popen('hostname').read()
+        return os.popen('hostname').read().strip()
 
     def get_ip():
         """ Fetch the current ip address.

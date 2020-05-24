@@ -1,6 +1,0 @@
-#!/bin/sh
-#
-# lcd_leds_dht, with output to an lcd1602 display device,
-# DHT device and status leds on the specified pins
-#
-$PIHOME/python/lcd_leds_dht.py --display lcd1602 4 22 24 23 27

@@ -1,6 +1,0 @@
-#!/bin/sh
-#
-# lcd_leds_dht, with output to an ssd1306 display device,
-# DHT device and status leds on the specified pins
-#
-$PIHOME/python/lcd_leds_dht.py --display ssd1306 --width=128 --height=32 4 26 12 13 16
