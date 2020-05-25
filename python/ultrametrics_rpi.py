@@ -138,6 +138,71 @@ class StatusLeds():
         """ Clear all leds. """
         GPIO.output(list(self.colorpins.values()), GPIO.LOW)
 
+class StatusLedsPwm():
+    """ wrapper for controlling commonly used 4-led status bar
+        used to indicate four relative levels of criticality.
+        Order the lights by 'severity', e.g. red, ylw, grn, blu.
+        Uses PWM to control brightness.
+    """
+    def __init__(self, colorpins):
+        """
+        :param colorpins: The pin numbers (in BCM) of the leds.
+        :type colorpins: list
+        """
+        self.colorpins = colorpins
+        self.colors, self.pins = colorpins.keys(), colorpins.values()
+        self.pwms = {}
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        logging.info('using GPIO pins to drive LEDs: ')
+        # enable output and flash each pin in sequence
+        for color, pin in colorpins.items(): 
+            GPIO.setup(pin, GPIO.OUT)
+            logging.info('led pin %d - %s ' % (pin, color))
+            self.pwms[color] = GPIO.PWM(pin, 1000)
+            self.pwms[color].start(10)
+            sleep(0.2)
+        self.clear_all()
+
+    def light(self, color, brightness=100):
+        """ Light the specified led.
+        :param color: The pin number (in BCM) of the led to light
+        :type color: int
+        :param brightness: The brightness from 0 to 100.
+        :type brightness: int
+        """
+        self.pwms[color].ChangeDutyCycle(brightness)
+
+    def light_threshold(self, v, t1, t2, brightness=100):
+        """ Light leds based on a value compared to thresholds. 
+        Assumes 3 lights and 2 thresholds.
+
+        :param v: The value to compare to the thresholds.
+        :type v: int
+        :param t1: The lower threshold.
+        :type t1: int
+        :param t2: The upper threshold.
+        :type t2: int
+        """
+        if(v < t1):
+            self.pwms['green'].ChangeDutyCycle(brightness)
+        elif(v >= t1 and v < t2):
+            self.pwms['yellow'].ChangeDutyCycle(brightness)
+        elif(v >= t2):
+            self.pwms['red'].ChangeDutyCycle(brightness)
+
+    def clear_all(self):
+        """ Clear all leds. """
+        for color, pin in self.colorpins.items(): 
+            self.pwms[color].ChangeDutyCycle(0)
+
+    def clear(self, color):
+        """ Clear the specified led.
+        :param color: The pin number (in BCM) of the led to clear
+        :type color: int
+        """
+        self.pwms[color].ChangeDutyCycle(0)
+
 class DHT11:
     """ dht11 temperature and humidity sensor wrapper
     .. note:: requires adafruit-circuitpython-dht, not Adafruit_DHT,
@@ -161,7 +226,8 @@ class DHT11:
         """
         try:
             temperature_c = self.dht.temperature
-            temperature_f = temperature_c * (9 / 5) + 32
+            if(temperature_c is None): temperature_f = None
+            else: temperature_f = temperature_c * (9 / 5) + 32
             humidity = self.dht.humidity
         except RuntimeError:
             # dht doesn't always succeed. continue.
