@@ -13,6 +13,10 @@
 #   outputs text readings and graphical traces an LCD1602 or SSD1306 display
 #   updates status LED's based on sensor readings thresholds
 #
+# Copyright (C) 2020, Patrick Charles
+# Distributed under the Mozilla Public License
+# http://www.mozilla.org/NPL/MPL-1.1.txt
+#
 import logging
 from time import sleep
 import socket
