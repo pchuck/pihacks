@@ -13,10 +13,6 @@
 #   outputs text readings and graphical traces an LCD1602 or SSD1306 display
 #   updates status LED's based on sensor readings thresholds
 #
-# Copyright (C) 2020, Patrick Charles
-# Distributed under the Mozilla Public License
-# http://www.mozilla.org/NPL/MPL-1.1.txt
-#
 import logging
 from time import sleep
 import socket
@@ -25,6 +21,11 @@ import ultrametrics_rpi as umr
 
 DTIME=1 # number of seconds between sensor readings
 PTIME=10 # number of dtimes to persist each sensor screen
+GPU_ALERT, GPU_ALARM=65, 80 # gpu thresholds
+CPU_ALERT, CPU_ALARM=60, 75 # cpu thresholds
+LOAD_ALERT, LOAD_ALARM=1.5, 3.0 # load thresholds
+T_ALERT, T_ALARM=85, 95 # temperature thresholds in farenheit
+H_ALERT, H_ALARM=60, 90 # humidity thresholds
 
 logging.basicConfig(level=logging.INFO)
 
@@ -62,8 +63,8 @@ def update_th(tf, h):
     """ Update temperature and humidity display and status lights.
     """
     if(tf is not None and h is not None):
-        leds.light_threshold(tf, 85, 95)
-        leds.light_threshold(h, 60, 90)
+        leds.light_threshold(tf, T_ALERT, T_ALARM)
+        leds.light_threshold(h, H_ALERT, H_ALARM)
         lcd.display('ambient: %.1f F\nhumidity: %.1f' % (tf, h))
     else:
         leds.light('red')
@@ -108,19 +109,19 @@ def main(fld, lcd, leds, dht, expected_ip):
 
         # load
         (l1, l1s) = update(umr.System.get_load1, 'load', '%2.2f', l1s,
-                           1.5, 3.0, clear=False)
+                           LOAD_ALERT, LOAD_ALARM, clear=False)
         fld.display_formatted('load', '%2.2f', l1)
         leds.clear()
 
         # cpu
         (tc, tcs) = update(umr.System.get_cpu_temp, 'cpu', '%.1f C', tcs,
-                           60, 75, clear=False)
+                           CPU_ALERT, CPU_ALARM, clear=False)
         fld.display_formatted('cpu', '%.1f', tc)
         leds.clear()
 
         # gpu
         (tg, tgs) = update(umr.System.get_gpu_temp, 'gpu', '%.1f C', tgs,
-                           65, 80, clear=False)
+                           GPU_ALERT, GPU_ALARM, clear=False)
         fld.display_formatted('gpu', '%.1f', tg)
         leds.clear()
 

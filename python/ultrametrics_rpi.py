@@ -54,33 +54,27 @@ class ActiveBuzzer():
 class PassiveBuzzer():
     """ wrapper for controlling a passive buzzer
     """
-    def __init__(self, pin, resonance=2000, magnitude=500):
+    def __init__(self, pin):
         """
         :param pin: The pin number (in BCM) of the buzzer's input.
         :type pin: int
-        :param resonance: The resonant frequency in Hz of the buzzer.
-        :type resonance: int
-        :param magnitude: The magnitude of the waveform to produce.
-        :type magnitude: int
         """
         self.pin = pin
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(pin, GPIO.OUT)
-        self.pwm = GPIO.PWM(pin, 1)
-        self.pwm.start(0)
-        self.magnitude = magnitude
-        self.resonant = resonant
-
-    def start(self):
-        """ Start the buzzer. """
-        period = 0.001
-        degrees = 360
-        self.pwm.start(0)
-        for x in range(self.degrees):
-            sin_val = math.sin(x * (math.pi / self.degrees / 2))
-            tone_val = self.resonant + sin_val * self.magnitude
-            self.pwm.ChangeFrequency(tone_val)
-            sleep(self.period)
+        GPIO.setup(self.pin, GPIO.OUT)
+        self.pwm = GPIO.PWM(self.pin, 1) # create the pwm, at 1Hz initially
+        
+    def start(self, frequency=2000, duty=50):
+        """ Start the buzzer. 
+        :param frequency: The frequency in Hz of the tone to play.
+        :type frequency: int
+        :param duty: The duty cycle of the waveform to play.
+        :type duty: int
+        """
+        self.duty = duty
+        self.frequency = frequency
+        self.pwm = GPIO.PWM(self.pin, self.frequency)
+        self.pwm.start(duty)
 
     def stop(self):
         """ Stop the buzzer. """
