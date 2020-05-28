@@ -33,6 +33,7 @@ from luma.core.render import canvas
     PrintDisplay - adheres to BasicDisplay interface and outputs to console
     DummyDisplay - adheres to BasicDisplay interface with noop or console out
     FileDisplay - adheres to BasicDisplay interface and writes to a data file
+    MQSensor - mq gas sensor
 
     Sphinx markup is used for documentation generation.
 """
@@ -599,3 +600,43 @@ class System:
         """
         return datetime.now().timestamp()
 
+class MQSensor:
+    """
+    An encapsulation of an mq gas sensor with methods for normalizing its
+    output and other features.
+    """
+    def __init__(self, sensor_type):
+        """
+        :param sensor_type: The type of the sensor, e.g. "MQ6"
+        :type sensor_type: str
+        """
+        self.sensor_type = sensor_type.upper().replace('-', '')
+        self.gas_type = MQSensor.type_to_gas(self.sensor_type)
+
+    @staticmethod
+    def type_to_gas(sensor_type):
+        """
+        :param sensor_type: The type of the sensor, e.g. "MQ6".
+        :type sensor_type: str
+        :return: The type of gas detected.
+        :rtype: str
+        """
+        if(sensor_type == 'MQ2'):
+            return 'combustibles'
+        if(sensor_type == 'MQ3'):
+            return 'alcohol'
+        if(sensor_type == 'MQ4'):
+            return 'methane'
+        if(sensor_type == 'MQ5'):
+            return 'LPG or methane'
+        if(sensor_type == 'MQ6'):
+            return 'propane or butane'
+        if(sensor_type == 'MQ7'):
+            return 'carbon monoxide'
+        if(sensor_type == 'MQ8'):
+            return 'hydrogen'
+        if(sensor_type == 'MQ9'):
+            return 'carbon monoxide or combustibles'
+        if(sensor_type == 'MQ135'):
+            return 'contaminants, combustibles or CO2'
+        return('unknown')
