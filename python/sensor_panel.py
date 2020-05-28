@@ -128,6 +128,9 @@ def main(fld, lcd, leds, dht, expected_ip):
         # no graphing for t and h
         (tc, tf, h) = dht.sense_data()
         update_th(tf, h)
+        if(tf is not None): fld.display_formatted('ambient', '%.1f', tf)
+        if(h is not None): fld.display_formatted('humidity', '%.1f', h)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='sensor_panel arguments',
