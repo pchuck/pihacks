@@ -8,6 +8,7 @@
 #
 # prerequisites:
 #   pip3 install adafruit-circuitpython-ads1x15
+#   pip3 install python-pushover
 #
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
@@ -61,6 +62,9 @@ if __name__ == '__main__':
                         help='The I2C address of the a/d converter')
     parser.add_argument('--basev', type=float, default='0.2',
                         help='The baseline (clean air) voltage for the sensor')
+    parser.add_argument('--buzzer-type', type=str, default='passive',
+                        choices=['active', 'passive', 'none'],
+                        help='The type of buzzer.')
     parser.add_argument('d', type=int,
                         help='The data pin of the dht11. -1 if none attached.')
     parser.add_argument('b', type=int,
@@ -91,7 +95,10 @@ if __name__ == '__main__':
     leds = umr.StatusLeds(colorpins)
     leds.light('green')
 
-    buzzer = umr.ActiveBuzzer(args.z)
+    if(args.buzzer_type == 'passive'):
+        buzzer = umr.PassiveBuzzer(args.z)
+    else:
+        buzzer = umr.ActiveBuzzer(args.z)
     buzzer.stop()
     logging.info("buzzer test (0.1s)..")
     leds.clear(); leds.light('red')

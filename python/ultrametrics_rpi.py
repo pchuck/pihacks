@@ -61,26 +61,26 @@ class ActiveBuzzer():
 class PassiveBuzzer():
     """ wrapper for controlling a passive buzzer
     """
-    def __init__(self, pin):
+    def __init__(self, pin, frequency=1000):
         """
         :param pin: The pin number (in BCM) of the buzzer's input.
         :type pin: int
+        :param frequency: The initial frequency in Hz.
+        :type frequency: int
         """
         self.pin = pin
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.pin, GPIO.OUT)
-        self.pwm = GPIO.PWM(self.pin, 1) # create the pwm, at 1Hz initially
+        self.pwm = GPIO.PWM(self.pin, frequency)
         
-    def start(self, frequency=2000, duty=50):
+    def start(self, frequency=1000, duty=50):
         """ Start the buzzer. 
         :param frequency: The frequency in Hz of the tone to play.
         :type frequency: int
         :param duty: The duty cycle of the waveform to play.
         :type duty: int
         """
-        self.duty = duty
-        self.frequency = frequency
-        self.pwm = GPIO.PWM(self.pin, self.frequency)
+        self.pwm.ChangeFrequency(frequency)
         self.pwm.start(duty)
 
     def stop(self):
