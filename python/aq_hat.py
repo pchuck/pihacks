@@ -79,6 +79,7 @@ if __name__ == '__main__':
                         help='The signal pin to the buzzer')
 
     args = parser.parse_args()
+    host = umr.System.get_hostname()
 
     # LED wiring - colors and their associated pins
     # status_leds() expects the pins to be in order of increasing 'severity'
@@ -155,32 +156,36 @@ if __name__ == '__main__':
             if(v > v_baseline * alarm_factor): # update lights/buzzer
                 if(trigger_level != 4):
                     Client().send_message(
-                        "piz: > %.1fx %s levels detected! (%.2fv)" % (
-                        alarm_factor, mq.sensor_type, v), title="piz: alarm")
+                        "%s: > %.1fx %s levels detected! (%.2fv)" % (
+                        host, alarm_factor, mq.sensor_type, v),
+                        title="%s: alarm" % host)
                 leds.light('red')
                 buzzer.start();
                 trigger_level = 4
             elif(v > v_baseline * alert_factor):
                 if(trigger_level != 3):
                     Client().send_message(
-                        "piz: > %.1fx %s levels detected (%.2fv)" % (
-                        alert_factor, mq.sensor_type, v), title="piz: alert")
+                        "%s: > %.1fx %s levels detected (%.2fv)" % (
+                        host, alert_factor, mq.sensor_type, v),
+                        title="%s: alert" % host)
                 leds.light('red')
                 buzzer.stop();
                 trigger_level = 3
             elif(v > v_baseline * warn_factor):
                 if(trigger_level != 2):
                     Client().send_message(
-                        "piz: > %.1fx %s levels detected (%.2fv)" % (
-                        warn_factor, mq.sensor_type, v), title="piz: warn")
+                        "%s: > %.1fx %s levels detected (%.2fv)" % (
+                        host, warn_factor, mq.sensor_type, v),
+                        title="%s: warn" % host)
                 leds.light('yellow')
                 buzzer.stop();
                 trigger_level = 2
             else:
                 if(trigger_level != 1):
                     Client().send_message(
-                        "piz: %s levels cleared (%.2fv)" % (
-                        mq.sensor_type, v), title="piz: ok")
+                        "%s: %s levels cleared (%.2fv)" % (
+                        host, mq.sensor_type, v),
+                        title="%s: ok" % host)
 
                 if(i % 10 == 0):
                     leds.light('green')
