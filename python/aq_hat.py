@@ -6,6 +6,9 @@
 # led lights for status, an oled such as SSD1306 for visual display,
 # and a piezo-electric buzzer for alarm.
 #
+# prerequisites:
+#   pip3 install adafruit-circuitpython-ads1x15
+#
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
 # http://www.mozilla.org/NPL/MPL-1.1.txt
@@ -87,7 +90,7 @@ if __name__ == '__main__':
     leds = umr.StatusLeds(colorpins)
     leds.light('green')
 
-    buzzer = umr.ActiveBuzzer(args.z)
+    buzzer = umr.PassiveBuzzer(args.z)
     buzzer.stop()
     logging.info("buzzer test (0.1s)..")
     leds.clear(); leds.light('red')

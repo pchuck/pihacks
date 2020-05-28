@@ -1,5 +1,11 @@
 # ultrametrics_rpi.py
 #
+# prerequisites:
+#   pip3 install luma.core
+#   pip3 install luma.oled # for ssd1306
+#   sudo apt-get install libgpiod2
+#   pip3 install adafruit-circuitpython-dht # for DHT11
+#
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
 # http://www.mozilla.org/NPL/MPL-1.1.txt
