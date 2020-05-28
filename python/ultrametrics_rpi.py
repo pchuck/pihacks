@@ -32,13 +32,20 @@ from luma.core.render import canvas
     LogDisplay - adheres to BasicDisplay interface and outputs to a logger
     PrintDisplay - adheres to BasicDisplay interface and outputs to console
     DummyDisplay - adheres to BasicDisplay interface with noop or console out
-    FileDisplay - adheres to BasicDisplay interface and writes to a data file
+    SensorLog - writes data to file for later analysis
     MQSensor - mq gas sensor
 
     Sphinx markup is used for documentation generation.
 """
 
-class ActiveBuzzer():
+class GPIODevice:
+    """ an informal interface for controlling devices on GPIO.
+    """
+    def destroy(self):
+        """ Clean up the device. """
+        GPIO.cleanup()
+
+class ActiveBuzzer(GPIODevice):
     """ wrapper for controlling an active buzzer
     """
     def __init__(self, pin):
@@ -58,36 +65,36 @@ class ActiveBuzzer():
         """ Stop the buzzer. """
         GPIO.output(self.pin, GPIO.LOW)
 
-class PassiveBuzzer():
+class PassiveBuzzer(GPIODevice):
     """ wrapper for controlling a passive buzzer
     """
-    def __init__(self, pin, frequency=1000):
+    def __init__(self, pin):
         """
         :param pin: The pin number (in BCM) of the buzzer's input.
         :type pin: int
-        :param frequency: The initial frequency in Hz.
-        :type frequency: int
         """
         self.pin = pin
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.pin, GPIO.OUT)
-        self.pwm = GPIO.PWM(self.pin, frequency)
+        self.pwm = GPIO.PWM(self.pin, 1) # create the pwm, at 1Hz initially
         
-    def start(self, frequency=1000, duty=50):
+    def start(self, frequency=2000, duty=50):
         """ Start the buzzer. 
         :param frequency: The frequency in Hz of the tone to play.
         :type frequency: int
         :param duty: The duty cycle of the waveform to play.
         :type duty: int
         """
-        self.pwm.ChangeFrequency(frequency)
+        self.duty = duty
+        self.frequency = frequency
+        self.pwm = GPIO.PWM(self.pin, self.frequency)
         self.pwm.start(duty)
 
     def stop(self):
         """ Stop the buzzer. """
         self.pwm.stop()
 
-class StatusLeds():
+class StatusLeds(GPIODevice):
     """ wrapper for controlling commonly used 4-led status bar
         used to indicate four relative levels of criticality.
         Order the lights by 'severity', e.g. red, ylw, grn, blu.
@@ -139,7 +146,7 @@ class StatusLeds():
         """ Clear all leds. """
         GPIO.output(list(self.colorpins.values()), GPIO.LOW)
 
-class StatusLedsPwm():
+class StatusLedsPwm(GPIODevice):
     """ wrapper for controlling commonly used 4-led status bar
         used to indicate four relative levels of criticality.
         Order the lights by 'severity', e.g. red, ylw, grn, blu.
@@ -204,7 +211,7 @@ class StatusLedsPwm():
         """
         self.pwms[color].ChangeDutyCycle(0)
 
-class DHT11:
+class DHT11(GPIODevice):
     """ dht11 temperature and humidity sensor wrapper
     .. note:: requires adafruit-circuitpython-dht, not Adafruit_DHT,
               also libgpiod2
@@ -250,6 +257,7 @@ class BasicDisplay:
         :type message: str
         """
         pass
+    
     def display_formatted(self, label, sformat, value):
         """ Display a formatted message.
 
@@ -453,6 +461,22 @@ class PrintDisplay(BasicDisplay):
 class LogDisplay(BasicDisplay):
     """ implementation for displaying textual data on the console
     """
+    def display_formatted(self, label, sformat, value):
+        """ Display a formatted message. Overrides formatted display
+        to change delimeter.
+
+        :param label: The label for the value to be displayed.
+        :type label: str
+        :param sformat: The formatting string for the value.
+        :type sformate: str
+        :param value: The value to display.
+        :type value: numeric
+        """
+        if(value is not None):
+            self.display(label + ', ' + sformat % value)
+        else:
+            self.display(label + ', Error')
+
     def display(self, message):
         """ Display a message.
 
@@ -461,9 +485,8 @@ class LogDisplay(BasicDisplay):
         """
         logging.info(message)
 
-
-class FileDisplay(BasicDisplay):
-    """ implementation for displaying textual data on the console
+class SensorLog():
+    """ implementation for writing sensor data to file
     """
     def __init__(self, filename, echo=False):
         """
@@ -473,17 +496,33 @@ class FileDisplay(BasicDisplay):
         self.echo = echo
         self.file = open(filename, 'a')
         
-    def display(self, message):
-        """ Display a message.
+    def write(self, label, value, vformat='%s'):
+        """ Write a formatted data value to the file.
+        :param label: The label for the value to be logged.
+        :type label: str
+        :param vformat: The formatting string for the value.
+        :type vformate: str
+        :param value: The value to log.
+        :type value: numeric
+        """
+        t = format('%s, %s, ' % (System.get_datetime(), label) + 
+                   vformat % value + '\n')
+        if(value is not None): # ignore non-existent data
+            self.file.write(t)
+            # self.file.flush() # for debugging
+        if(self.echo):
+            logging.info(t)
 
-        :param message: The message to the file.
+    def write_message(self, message):
+        """ Write a message to the file. Caller performs formatting.
+        :param message: The formatted message to be logged.
         :type message: str
         """
         t = format('%s, %s\n' % (System.get_datetime(), message))
         self.file.write(t)
         if(self.echo):
             logging.info(t)
-
+            
     def destroy(self):
         """ Clean up the file resources. """
         self.file.close

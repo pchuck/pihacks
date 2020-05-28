@@ -126,7 +126,7 @@ if __name__ == '__main__':
     v_baseline = args.basev # baseline voltage
 
     # sensor data log
-    fld = umr.FileDisplay(LOG_PREFIX + "_" + mq.sensor_type.lower() + ".out")
+    sl = umr.SensorLog(LOG_PREFIX + "_" + mq.sensor_type.lower() + ".out")
 
     values = []
     i = 0
@@ -134,17 +134,17 @@ if __name__ == '__main__':
     try:
         i += 1
         lcd.display('initializing.. ')
-        #fld.display('datetime, type, raw, voltage')
+        #sl.write('datetime, type, raw, voltage')
         while True:
             if(args.d != -1):
                 (tc, tf, h) = dht.sense_data() # read dht sensor
-                if(tf is not None): fld.display('ambient, %.1f' % tf)
-                if(h is not None): fld.display('humidity, %.1f' % h)
+                if(tf is not None): sl.write('ambient', tf, vformat='%.1f')
+                if(h is not None): sl.write('humidity', h, vformat='%.1f')
                 
             r, v = adc.value, adc.voltage # read aq sensor
             if(len(values) > args.width): values.pop(0) # update trace
             values.append(r)
-            fld.display('%s, %d, %f' % (mq.sensor_type, r, v))
+            sl.write_message('%s, %d, %f' % (mq.sensor_type, r, v))
             if(args.height == 32): # two line display
                 lcd.display('AQ=%+.2f%% (%.3fv)' %
                             (-v * 100.0 / v_baseline + 100.0, v), values)

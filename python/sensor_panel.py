@@ -13,6 +13,7 @@
 #   outputs text readings and graphical traces an LCD1602 or SSD1306 display
 #   updates status LED's based on sensor readings thresholds
 #
+import sys
 import logging
 from time import sleep
 import socket
@@ -59,7 +60,7 @@ def update_uptime():
     lcd.display('uptime: \n%dd %02d:%02d:%02d' % (d, h, m, s))
     leds.light('blue'); sleep(PTIME * DTIME) ; leds.clear()
 
-def update_th(tf, h):
+def update_th(lcd, leds, tf, h):
     """ Update temperature and humidity display and status lights.
     """
     if(tf is not None and h is not None):
@@ -79,7 +80,8 @@ def sense_fifo(w, v, l):
         l.append(v)
     return l
 
-def update(func, name, sformat, l, low, high, clear=True):
+def update(lcd, leds, func, name, l, low, high, vformat='%s', units='',
+           clear=True):
     """ Generic display and status light update routine, with graphical trace.
     """
     for i in range(PTIME):
@@ -88,7 +90,7 @@ def update(func, name, sformat, l, low, high, clear=True):
         if(v is None):
             lcd.display(name + ': Err')
         else:
-            lcd.display(name + ': ' + sformat % v, l)
+            lcd.display(name + ': ' + vformat % v + '%s' % units, l)
             leds.light_threshold(v, low, high);
         sleep(DTIME)
         if(clear):
@@ -97,7 +99,7 @@ def update(func, name, sformat, l, low, high, clear=True):
     return(v, l)
 
 
-def main(fld, lcd, leds, dht, expected_ip):
+def main(sl, lcd, leds, dht, expected_ip):
     """ Main control: generic display, status lights and graphical trace.
     """
     l1s, tcs, tgs, tfs, hs = [], [], [], [], []
@@ -108,28 +110,28 @@ def main(fld, lcd, leds, dht, expected_ip):
         update_uptime()
 
         # load
-        (l1, l1s) = update(umr.System.get_load1, 'load', '%2.2f', l1s,
-                           LOAD_ALERT, LOAD_ALARM, clear=False)
-        fld.display_formatted('load', '%2.2f', l1)
-        leds.clear()
+        (l1, l1s) = update(lcd, leds, umr.System.get_load1, 'load', l1s,
+                           LOAD_ALERT, LOAD_ALARM,
+                           vformat='%2.2f', clear=False)
+        sl.write('load', l1, vformat='%2.2f')
 
         # cpu
-        (tc, tcs) = update(umr.System.get_cpu_temp, 'cpu', '%.1f C', tcs,
-                           CPU_ALERT, CPU_ALARM, clear=False)
-        fld.display_formatted('cpu', '%.1f', tc)
-        leds.clear()
+        (tc, tcs) = update(lcd, leds, umr.System.get_cpu_temp, 'cpu', tcs,
+                           CPU_ALERT, CPU_ALARM,
+                           vformat='%.1f', units=' C', clear=False)
+        sl.write('cpu', tc, vformat='%.1f')
 
         # gpu
-        (tg, tgs) = update(umr.System.get_gpu_temp, 'gpu', '%.1f C', tgs,
-                           GPU_ALERT, GPU_ALARM, clear=False)
-        fld.display_formatted('gpu', '%.1f', tg)
-        leds.clear()
+        (tg, tgs) = update(lcd, leds, umr.System.get_gpu_temp, 'gpu', tgs,
+                           GPU_ALERT, GPU_ALARM,
+                           vformat='%.1f', units=' C', clear=False)
+        sl.write('gpu', tg, vformat='%.1f')
 
         # no graphing for t and h
         (tc, tf, h) = dht.sense_data()
-        update_th(tf, h)
-        if(tf is not None): fld.display_formatted('ambient', '%.1f', tf)
-        if(h is not None): fld.display_formatted('humidity', '%.1f', h)
+        update_th(lcd, leds, tf, h)
+        if(tf is not None): sl.write('ambient', tf, vformat='%.1f')
+        if(h is not None): sl.write('humidity', h, vformat='%.1f')
 
 
 if __name__ == '__main__':
@@ -179,7 +181,7 @@ if __name__ == '__main__':
         lcd = umr.DummyDisplay()
 
     # write sensor readings to file
-    fld = umr.FileDisplay('sensor_panel_dht.%s.out' % umr.System.get_hostname())
+    sl = umr.SensorLog('sensor_panel_dht.%s.out' % umr.System.get_hostname())
     
     lcd.display('initializing.. ')
     leds = umr.StatusLeds(colorpins)
@@ -188,8 +190,9 @@ if __name__ == '__main__':
     try:
         lcd.display('running.. ')
         expected_ip = umr.System.get_ip()
-        main(fld, lcd, leds, dht, expected_ip)
+        main(sl, lcd, leds, dht, expected_ip)
     except KeyboardInterrupt:
         leds.clear()
         lcd.destroy()
+
 
