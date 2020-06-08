@@ -6,6 +6,7 @@
 #   sudo apt-get install libgpiod2
 #   pip3 install adafruit-circuitpython-dht # for DHT11
 #   pip3 install adafruit-circuitpython-bme280 # for BME/BMP280
+#   pip3 install adafruit-circuitpython-ads1x15
 #
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
@@ -24,8 +25,10 @@ from luma.core.render import canvas
 """
   Classes for controlling Raspberry Pi GPIO devices
     System - an encapsulation of a system with methods for interrogating state.
-    Buzzer - a passive buzzer component, with start() and stop()
+    BuzzerInterface - a standard interface for buzzers.
+    PassiveBuzzer - a passive buzzer component, with start() and stop()
     ActiveBuzzer - an active buzzer component, with start() and stop()
+    DummyBuzzer - a buzzer that doesn't make any sound.
     StatusLeds - status lights controlled individually or by threshold
     DHT11 - a temperature and humidity sensor
     BME280 - a temperature, humidity and pressure sensor
@@ -37,22 +40,14 @@ from luma.core.render import canvas
     DummyDisplay - adheres to BasicDisplay interface with noop or console out
     SensorLog - writes data to file for later analysis
     MQSensor - mq gas sensor
+    ADS1115 - analog to digital converter
 
     Sphinx markup is used for documentation generation.
 """
 
-class GPIODevice:
-    def __init__(self):
-        pass
-        
-    """ an informal interface for controlling devices on GPIO.
-    """
-    def destroy(self):
-        """ Clean up the device. """
-        GPIO.cleanup()
 
-class DummyBuzzer(GPIODevice):
-    """ wrapper for a non-existent buzzer
+class BuzzerInterface():
+    """ an informal interface for buzzers.
     """
     def __init__(self):
         pass
@@ -63,7 +58,11 @@ class DummyBuzzer(GPIODevice):
     def stop(self):
         pass
 
-class ActiveBuzzer(GPIODevice):
+class DummyBuzzer(BuzzerInterface):
+    """ a buzzer that doesn't make any sound.
+    """
+
+class ActiveBuzzer(BuzzerInterface):
     """ wrapper for controlling an active buzzer
     """
     def __init__(self, pin):
@@ -83,7 +82,10 @@ class ActiveBuzzer(GPIODevice):
         """ Stop the buzzer. """
         GPIO.output(self.pin, GPIO.LOW)
 
-class PassiveBuzzer(GPIODevice):
+    def destroy(self):
+        GPIO.cleanup()
+
+class PassiveBuzzer(BuzzerInterface):
     """ wrapper for controlling a passive buzzer
     """
     def __init__(self, pin):
@@ -105,22 +107,27 @@ class PassiveBuzzer(GPIODevice):
         """
         self.duty = duty
         self.frequency = frequency
-        self.pwm = GPIO.PWM(self.pin, self.frequency)
+        self.pwm.ChangeFrequency(frequency)
         self.pwm.start(duty)
 
     def stop(self):
         """ Stop the buzzer. """
         self.pwm.stop()
 
-class StatusLeds(GPIODevice):
+    def destroy(self):
+        GPIO.cleanup()
+
+class StatusLeds():
     """ wrapper for controlling commonly used 4-led status bar
         used to indicate four relative levels of criticality.
         Order the lights by 'severity', e.g. red, ylw, grn, blu.
     """
-    def __init__(self, colorpins):
+    def __init__(self, colorpins, buzzer=None):
         """
         :param colorpins: The pin numbers (in BCM) of the leds.
         :type colorpins: list
+        :param buzzer: Optional buzzer to sound above threshold.
+        :type buzzer: Buzzer
         """
         self.colorpins = colorpins
         self.colors, self.pins = colorpins.keys(), colorpins.values()
@@ -134,6 +141,7 @@ class StatusLeds(GPIODevice):
             GPIO.output(pin, GPIO.HIGH)
             sleep(0.2)
             GPIO.output(pin, GPIO.LOW)
+        self.buzzer = buzzer
 
     def light(self, color):
         """ Light the specified led.
@@ -142,7 +150,7 @@ class StatusLeds(GPIODevice):
         """
         GPIO.output(self.colorpins.get(color), GPIO.HIGH)
 
-    def light_threshold(self, v, t1, t2):
+    def light_threshold(self, v, t1, t2, buzz=False):
         """ Light leds based on a value compared to thresholds. 
         Assumes 3 lights and 2 thresholds.
 
@@ -152,6 +160,8 @@ class StatusLeds(GPIODevice):
         :type t1: int
         :param t2: The upper threshold.
         :type t2: int
+        :param buzz: Whether to sound the buzzer above threshold.
+        :type buzz: bool
         """
         if(v < t1):               
             GPIO.output(self.colorpins.get('green'), GPIO.HIGH)
@@ -159,21 +169,28 @@ class StatusLeds(GPIODevice):
             GPIO.output(self.colorpins.get('yellow'), GPIO.HIGH)
         elif(v >= t2):
             GPIO.output(self.colorpins.get('red'), GPIO.HIGH)
+            if(self.buzzer and buzz): self.buzzer.start()
 
     def clear(self):
         """ Clear all leds. """
         GPIO.output(list(self.colorpins.values()), GPIO.LOW)
+        if(self.buzzer): self.buzzer.stop()
 
-class StatusLedsPwm(GPIODevice):
+    def destroy(self):
+        GPIO.cleanup()
+
+class StatusLedsPwm():
     """ wrapper for controlling commonly used 4-led status bar
         used to indicate four relative levels of criticality.
         Order the lights by 'severity', e.g. red, ylw, grn, blu.
         Uses PWM to control brightness.
     """
-    def __init__(self, colorpins):
+    def __init__(self, colorpins, buzzer=None):
         """
         :param colorpins: The pin numbers (in BCM) of the leds.
         :type colorpins: list
+        :param buzzer: Optional buzzer to sound above threshold.
+        :type buzzer: Buzzer
         """
         self.colorpins = colorpins
         self.colors, self.pins = colorpins.keys(), colorpins.values()
@@ -189,6 +206,7 @@ class StatusLedsPwm(GPIODevice):
             self.pwms[color].start(10)
             sleep(0.2)
         self.clear_all()
+        self.buzzer = buzzer
 
     def light(self, color, brightness=100):
         """ Light the specified led.
@@ -199,7 +217,7 @@ class StatusLedsPwm(GPIODevice):
         """
         self.pwms[color].ChangeDutyCycle(brightness)
 
-    def light_threshold(self, v, t1, t2, brightness=100):
+    def light_threshold(self, v, t1, t2, brightness=100, buzz=False):
         """ Light leds based on a value compared to thresholds. 
         Assumes 3 lights and 2 thresholds.
 
@@ -209,6 +227,8 @@ class StatusLedsPwm(GPIODevice):
         :type t1: int
         :param t2: The upper threshold.
         :type t2: int
+        :param buzz: Whether to sound the buzzer above threshold.
+        :type buzz: bool
         """
         if(v < t1):
             self.pwms['green'].ChangeDutyCycle(brightness)
@@ -216,12 +236,14 @@ class StatusLedsPwm(GPIODevice):
             self.pwms['yellow'].ChangeDutyCycle(brightness)
         elif(v >= t2):
             self.pwms['red'].ChangeDutyCycle(brightness)
+            if(self.buzzer and buzz): self.buzzer.start()
 
     def clear_all(self):
         """ Clear all leds. """
         for color, pin in self.colorpins.items(): 
             self.pwms[color].ChangeDutyCycle(0)
-
+        if(self.buzzer): self.buzzer.stop()
+        
     def clear(self, color):
         """ Clear the specified led.
         :param color: The pin number (in BCM) of the led to clear
@@ -229,7 +251,10 @@ class StatusLedsPwm(GPIODevice):
         """
         self.pwms[color].ChangeDutyCycle(0)
 
-class DHT11(GPIODevice):
+    def destroy(self):
+        GPIO.cleanup()
+
+class DHT11():
     """ dht11 temperature and humidity sensor wrapper
     .. note:: requires adafruit-circuitpython-dht, not Adafruit_DHT,
               also libgpiod2
@@ -244,7 +269,7 @@ class DHT11(GPIODevice):
 
     def sense_data(self):
         """ Read the temperature and humidity from the DHT11 sensor.
-        .. note:: RuntimeError is handled internally. The DT11 read often fails.
+        .. note:: RuntimeError is handled internally. DT11 read often fails.
 
         :return: the temperature in celsius, farenheit and the humidity.
         :rtype: (int, int, int)
@@ -261,7 +286,7 @@ class DHT11(GPIODevice):
 
         return(temperature_c, temperature_f, humidity, None)
 
-class BME280(GPIODevice):
+class BME280():
     """ BME/BMP280 temperature and humidity sensor wrapper
     .. note:: requires adafruit-circuitpython-bme280
     """
@@ -545,18 +570,18 @@ class SensorLog():
         self.echo = echo
         self.file = open(filename, 'a')
         
-    def write(self, label, value, vformat='%s'):
-        """ Write a formatted data value to the file.
+    def write(self, label, values, vformat='%s'):
+        """ Write formatted data value(s) to the file.
         :param label: The label for the value to be logged.
         :type label: str
         :param vformat: The formatting string for the value.
         :type vformate: str
-        :param value: The value to log.
-        :type value: numeric
+        :param values: The value(s) to log.
+        :type values: numeric
         """
         t = format('%s, %s, ' % (System.get_datetime(), label) + 
-                   vformat % value + '\n')
-        if(value is not None): # ignore non-existent data
+                   vformat % values + '\n')
+        if(values is not None): # ignore non-existent data
             self.file.write(t)
             # self.file.flush() # for debugging
         if(self.echo):
@@ -687,6 +712,7 @@ class System:
         :rtype: int
         """
         return datetime.now().timestamp()
+
 class MQSensor:
     """
     An encapsulation of an mq gas sensor with methods for normalizing its
@@ -720,7 +746,7 @@ class MQSensor:
             # also adjust temperature and humidity for comparison
              'ambient': {'type':  'ambient', 'r': 80.0, 'v': 1.0},
             'humidity': {'type': 'humidity', 'r': 25.0, 'v': 1.0},
-               'light': {'type':    'light', 'r': 7270, 'v': 0.909}
+               'LIGHT': {'type':    'light', 'r': 7270, 'v': 0.909}
         }
         return(adjustments)
 
@@ -798,3 +824,48 @@ class MQSensor:
         if(sensor_type == 'humidity'):
             return 'humidity'
         return('unknown')
+
+class ADS1115:
+    """ ADS11x5 analog/digital converter
+    .. note:: requires adafruit-circuitpython-ads1x15
+    """
+    def __init__(self, address):
+        """
+        :param addr: The i2c address of the sensor.
+        :type addr: int
+        """
+        import busio
+        import board
+        import adafruit_ads1x15.ads1115 as ADS
+        from adafruit_ads1x15.analog_in import AnalogIn
+        i2c = busio.I2C(board.SCL, board.SDA)
+        self.ads =  ADS.ADS1115(i2c, address=int(address, 16))
+        self.adcs = [AnalogIn(self.ads, ADS.P0),
+                     AnalogIn(self.ads, ADS.P1),
+                     AnalogIn(self.ads, ADS.P2),
+                     AnalogIn(self.ads, ADS.P3)]
+
+    def read_values(self, channel):
+        """
+        :param channel: The channel to read.
+        :type channel: int
+        """
+        raw = self.adcs[channel].value
+        voltage = self.adcs[channel].voltage
+        return raw, voltage
+
+    def read_raw(self, channel):
+        """
+        :param channel: The channel to read.
+        :type channel: int
+        """
+        return self.adcs[channel].value
+
+    def read_voltage(self, channel):
+        """
+        :param channel: The channel to read.
+        :type channel: int
+        """
+        return self.adcs[channel].voltage
+
+
