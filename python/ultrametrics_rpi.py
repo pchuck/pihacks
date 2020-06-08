@@ -5,6 +5,7 @@
 #   pip3 install luma.oled # for ssd1306
 #   sudo apt-get install libgpiod2
 #   pip3 install adafruit-circuitpython-dht # for DHT11
+#   pip3 install adafruit-circuitpython-bme280 # for BME/BMP280
 #
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
@@ -16,6 +17,8 @@ import math
 import socket
 from time import strftime, sleep
 from datetime import datetime
+import RPi.GPIO as GPIO
+from luma.core.render import canvas
 
 
 """
@@ -24,7 +27,8 @@ from datetime import datetime
     Buzzer - a passive buzzer component, with start() and stop()
     ActiveBuzzer - an active buzzer component, with start() and stop()
     StatusLeds - status lights controlled individually or by threshold
-    DHT11 - a temperature and humidity sensor that can be read
+    DHT11 - a temperature and humidity sensor
+    BME280 - a temperature, humidity and pressure sensor
     BasicDisplay - basic interface for displaying status text and graphs
     LCD1602Display - an LCD that can display two lines of status
     SSD1306Display - an OLED that can display multiple lines of status/graphs
@@ -39,13 +43,25 @@ from datetime import datetime
 
 class GPIODevice:
     def __init__(self):
-        import RPi.GPIO as GPIO
+        pass
         
     """ an informal interface for controlling devices on GPIO.
     """
     def destroy(self):
         """ Clean up the device. """
         GPIO.cleanup()
+
+class DummyBuzzer(GPIODevice):
+    """ wrapper for a non-existent buzzer
+    """
+    def __init__(self):
+        pass
+
+    def start(self):
+        pass
+    
+    def stop(self):
+        pass
 
 class ActiveBuzzer(GPIODevice):
     """ wrapper for controlling an active buzzer
@@ -241,10 +257,41 @@ class DHT11(GPIODevice):
             humidity = self.dht.humidity
         except RuntimeError:
             # dht doesn't always succeed. continue.
-            return(None, None, None)
+            return(None, None, None, None)
 
-        return(temperature_c, temperature_f, humidity)
-    
+        return(temperature_c, temperature_f, humidity, None)
+
+class BME280(GPIODevice):
+    """ BME/BMP280 temperature and humidity sensor wrapper
+    .. note:: requires adafruit-circuitpython-bme280
+    """
+    def __init__(self, address):
+        """
+        :param pin: The pin number (in BCM) of the DHT data line.
+        :type pin: int
+        """
+        import busio
+        import board
+        import adafruit_bme280
+        i2c = busio.I2C(board.SCL, board.SDA)
+        self.bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=address)
+
+    def sense_data(self):
+        """ Read the temperature and humidity from the sensor.
+        :return: the temperature in celsius, farenheit, humidity and pressure.
+        :rtype: (int, int, int, int)
+        """
+        try:
+            temperature_c = self.bme280.temperature
+            if(temperature_c is None): temperature_f = None
+            else: temperature_f = temperature_c * (9 / 5) + 32
+            humidity = self.bme280.humidity
+            pressure = self.bme280.pressure
+        except RuntimeError:
+            return(None, None, None, None)
+
+        return(temperature_c, temperature_f, humidity, pressure)
+
 class BasicDisplay:
     """ an informal interface for displaying textual data on a display device
     """
@@ -396,7 +443,6 @@ class SSD1306Display(BasicDisplay):
         """
         from luma.core.interface.serial import i2c
         from luma.oled.device import ssd1306 as led
-        from luma.core.render import canvas
         
         logging.info('looking for OLED on i2c bus at %x' % i2c_addr)
         serial = i2c(port=1, address=i2c_addr)
@@ -673,7 +719,8 @@ class MQSensor:
             
             # also adjust temperature and humidity for comparison
              'ambient': {'type':  'ambient', 'r': 80.0, 'v': 1.0},
-            'humidity': {'type': 'humidity', 'r': 25.0, 'v': 1.0}
+            'humidity': {'type': 'humidity', 'r': 25.0, 'v': 1.0},
+               'light': {'type':    'light', 'r': 7270, 'v': 0.909}
         }
         return(adjustments)
 
