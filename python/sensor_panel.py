@@ -60,13 +60,16 @@ def update_uptime():
     lcd.display('uptime: \n%dd %02d:%02d:%02d' % (d, h, m, s))
     leds.light('blue'); sleep(PTIME * DTIME) ; leds.clear()
 
-def update_th(lcd, leds, tf, h):
+def update_th(lcd, leds, tf, h, p):
     """ Update temperature and humidity display and status lights.
     """
     if(tf is not None and h is not None):
         leds.light_threshold(tf, T_ALERT, T_ALARM)
         leds.light_threshold(h, H_ALERT, H_ALARM)
-        lcd.display('ambient: %.1f F\nhumidity: %.1f' % (tf, h))
+        if(p is None):
+            lcd.display('ambient: %.1f F\nhumidity: %.1f' % (tf, h))
+        else:
+            lcd.display('ambient: %.1f F\nhumidity: %.1f\npressure: %.1f' % (tf, h, p))
     else:
         leds.light('red')
         lcd.display('ambient: Err\nhumidity: Err')
@@ -99,7 +102,7 @@ def update(lcd, leds, func, name, l, low, high, vformat='%s', units='',
     return(v, l)
 
 
-def main(sl, lcd, leds, dht, expected_ip):
+def main(sl, lcd, leds, thsense, expected_ip):
     """ Main control: generic display, status lights and graphical trace.
     """
     l1s, tcs, tgs, tfs, hs = [], [], [], [], []
@@ -127,11 +130,13 @@ def main(sl, lcd, leds, dht, expected_ip):
                            vformat='%.1f', units=' C', clear=False)
         sl.write('gpu', tg, vformat='%.1f')
 
-        # no graphing for t and h
-        (tc, tf, h) = dht.sense_data()
-        update_th(lcd, leds, tf, h)
-        if(tf is not None): sl.write('ambient', tf, vformat='%.1f')
-        if(h is not None): sl.write('humidity', h, vformat='%.1f')
+        # no graphing for temperature, humidity and pressure
+        if(thsense):
+            (tc, tf, h, p) = thsense.sense_data()
+            update_th(lcd, leds, tf, h, p)
+            if(tf is not None): sl.write('ambient', tf, vformat='%.1f')
+            if(h is not None): sl.write('humidity', h, vformat='%.1f')
+            if(p is not None): sl.write('pressure', p, vformat='%.1f')
 
 
 if __name__ == '__main__':
@@ -140,22 +145,27 @@ if __name__ == '__main__':
     
     # arguments
     parser.add_argument('--display', type=str, default='dummy',
-        choices=['ssd1306', 'lcd1602', 'dummy'],
-        help='The type of device for displaying info messages')
+                        choices=['ssd1306', 'lcd1602', 'dummy'],
+                        help='The type of device for displaying info messages')
+    parser.add_argument('--rotate', type=int, default=0,
+                        choices=[0, 1, 2, 3],
+                        help='The amount to rotate the display.')
     parser.add_argument('--width', type=int, default=128,
                         help='The width of the display in pixels')
     parser.add_argument('--height', type=int, default=32,
                         help='The height of the display in pixels')
-    parser.add_argument('d', type=int, 
-        help='The data pin of the dht11 in BCM')
+    parser.add_argument('--dht11', type=int, 
+                        help='The data pin of the dht11 in BCM')
+    parser.add_argument('--bme280', type=str, 
+                        help='The hex i2c address of the bme280. e.g. 0x76')
     parser.add_argument('b', type=int, 
-        help='The signal pin to the first status led in BCM')
+                        help='The signal pin to the first status led in BCM')
     parser.add_argument('g', type=int, 
-        help='The signal pin to the second status led in BCM')
+                        help='The signal pin to the second status led in BCM')
     parser.add_argument('y', type=int, 
-        help='The signal pin to the third status led in BCM')
+                        help='The signal pin to the third status led in BCM')
     parser.add_argument('r', type=int, 
-        help='The signal pin to the last status led in BCM')
+                        help='The signal pin to the last status led in BCM')
 
     args = parser.parse_args()
 
@@ -168,15 +178,13 @@ if __name__ == '__main__':
         'red': args.r
     }
 
-    # DHT wiring - GPIO bcm
-    DHT_PIN = args.d
-
     # set the display output
     display_type = args.display.lower()
     if(display_type == 'lcd1602'):
         lcd = umr.LCD1602Display(echo=False)
     elif(display_type == 'ssd1306'):
-        lcd = umr.SSD1306Display(echo=False)
+        lcd = umr.SSD1306Display(echo=False, rotate=args.rotate,
+                                 width=args.width, height=args.height)
     else:
         lcd = umr.DummyDisplay()
 
@@ -185,12 +193,18 @@ if __name__ == '__main__':
     
     lcd.display('initializing.. ')
     leds = umr.StatusLeds(colorpins)
-    dht = umr.DHT11(DHT_PIN)
+    
+    if(args.dht11 is not None):
+        thsense = umr.DHT11(args.dht11)
+    elif(args.bme280 is not None):
+        thsense = umr.BME280(int(args.bme280, 16))
+    else:
+        thsense = None
 
     try:
         lcd.display('running.. ')
         expected_ip = umr.System.get_ip()
-        main(sl, lcd, leds, dht, expected_ip)
+        main(sl, lcd, leds, thsense, expected_ip)
     except KeyboardInterrupt:
         leds.clear()
         lcd.destroy()

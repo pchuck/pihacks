@@ -16,8 +16,7 @@ import math
 import socket
 from time import strftime, sleep
 from datetime import datetime
-import RPi.GPIO as GPIO
-from luma.core.render import canvas
+
 
 """
   Classes for controlling Raspberry Pi GPIO devices
@@ -39,6 +38,9 @@ from luma.core.render import canvas
 """
 
 class GPIODevice:
+    def __init__(self):
+        import RPi.GPIO as GPIO
+        
     """ an informal interface for controlling devices on GPIO.
     """
     def destroy(self):
@@ -394,7 +396,8 @@ class SSD1306Display(BasicDisplay):
         """
         from luma.core.interface.serial import i2c
         from luma.oled.device import ssd1306 as led
-
+        from luma.core.render import canvas
+        
         logging.info('looking for OLED on i2c bus at %x' % i2c_addr)
         serial = i2c(port=1, address=i2c_addr)
         self.device = led(serial, height=height, width=width, rotate=rotate)
@@ -612,7 +615,7 @@ class System:
         days = int(ts / sd)
         hours = int((ts - days * sd) / sh)
         minutes = int((ts - days * sd - hours * sh) / sm)
-        seconds = int(ts - days * sd - hours * sh - minutes * sm)
+        seconds = int( ts - days * sd - hours * sh - minutes * sm)
         return(days, hours, minutes, seconds)
 
     @staticmethod
@@ -638,7 +641,6 @@ class System:
         :rtype: int
         """
         return datetime.now().timestamp()
-
 class MQSensor:
     """
     An encapsulation of an mq gas sensor with methods for normalizing its
@@ -649,15 +651,49 @@ class MQSensor:
         :param sensor_type: The type of the sensor, e.g. "MQ6"
         :type sensor_type: str
         """
-        self.sensor_type = sensor_type.upper().replace('-', '')
-        self.gas_type = MQSensor.type_to_gas(self.sensor_type)
+        self.sensor_type = MQSensor.fix_name(sensor_type)
+        self.description = MQSensor.type_to_description(self.sensor_type)
+        self.gas         = MQSensor.type_to_gas(self.sensor_type)
+        self.baseline_r  = MQSensor.get_baselines()[self.sensor_type]['r']
+        self.baseline_v  = MQSensor.get_baselines()[self.sensor_type]['v']
 
     @staticmethod
-    def type_to_gas(sensor_type):
+    def fix_name(unformatted_type):
+        return unformatted_type.upper().replace('-', '')
+    
+    @staticmethod
+    def get_baselines():
+        adjustments = {
+            'MQ135': {'type': 'MQ135', 'r': 9713, 'v': 1.214233},
+              'MQ2': {'type':   'MQ2', 'r':  894, 'v': 0.111931},
+              'MQ9': {'type':   'MQ9', 'r': 1139, 'v': 0.142478},
+              'MQ7': {'type':   'MQ7', 'r': 2948, 'v': 0.368635},
+              'MQ6': {'type':   'MQ6', 'r': 1260, 'v': 0.157630}, 
+              'MQ5': {'type':   'MQ5', 'r': 1045, 'v': 0.130504},
+            
+            # also adjust temperature and humidity for comparison
+             'ambient': {'type':  'ambient', 'r': 80.0, 'v': 1.0},
+            'humidity': {'type': 'humidity', 'r': 25.0, 'v': 1.0}
+        }
+        return(adjustments)
+
+    @staticmethod
+    def get_baseline(sensor_type):
         """
         :param sensor_type: The type of the sensor, e.g. "MQ6".
         :type sensor_type: str
-        :return: The type of gas detected.
+        :return: The baseline values for the sensor.
+        :rtype: str
+        """
+        return(get_baselines()[sensor_type]['r'],
+               get_baselines()[sensor_type]['v'])
+        
+    @staticmethod
+    def type_to_description(sensor_type):
+        """
+        :param sensor_type: The type of the sensor, e.g. "MQ6".
+        :type sensor_type: str
+        :return: A description of the gas(es) detected.
         :rtype: str
         """
         if(sensor_type == 'MQ2'):
@@ -678,4 +714,40 @@ class MQSensor:
             return 'carbon monoxide or combustibles'
         if(sensor_type == 'MQ135'):
             return 'contaminants, combustibles or CO2'
+        if(sensor_type == 'ambient'):
+            return 'ambient'
+        if(sensor_type == 'humidity'):
+            return 'humidity'
+        return('unknown')
+
+    @staticmethod
+    def type_to_gas(sensor_type):
+        """
+        :param sensor_type: The type of the sensor, e.g. "MQ6".
+        :type sensor_type: str
+        :return: The gas(es) detected.
+        :rtype: str
+        """
+        if(sensor_type == 'MQ2'):
+            return 'CG'
+        if(sensor_type == 'MQ3'):
+            return 'Alc'
+        if(sensor_type == 'MQ4'):
+            return 'MH4'
+        if(sensor_type == 'MQ5'):
+            return 'MH4/LPG'
+        if(sensor_type == 'MQ6'):
+            return 'LPG/Butane'
+        if(sensor_type == 'MQ7'):
+            return 'CO'
+        if(sensor_type == 'MQ8'):
+            return 'H2'
+        if(sensor_type == 'MQ9'):
+            return 'CO/CG'
+        if(sensor_type == 'MQ135'):
+            return 'CX/CO2'
+        if(sensor_type == 'ambient'):
+            return 'ambient'
+        if(sensor_type == 'humidity'):
+            return 'humidity'
         return('unknown')
