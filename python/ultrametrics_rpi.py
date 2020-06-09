@@ -442,7 +442,8 @@ class LumaDisplay(BasicDisplay):
     """
     def __init__(self, width, height, rotate=0,
                  trace_height=16, echo=False,
-                 font=None, color='White', i2c_addr=0x3c):
+                 font=None, color='White', trace_color='Yellow',
+                 i2c_addr=0x3c):
         """
         :param echo: Whether or not to echo writes to the logger.
         :type echo: bool
@@ -463,6 +464,7 @@ class LumaDisplay(BasicDisplay):
         :param i2c_addr: Address of the device on the i2c bus (if applicable).
         :type i2c_addr: int
         """
+        # display device-specific setup, creates self.device
         self._setup(rotate, width, height)
         self.device.clear()
         logging.info('OLED found')
@@ -470,6 +472,7 @@ class LumaDisplay(BasicDisplay):
         self.echo = echo
         self.font = font
         self.color = color
+        self.trace_color = trace_color
         self.x = self.device.width
         self.y = self.device.height
         self.trace_height = trace_height
@@ -493,7 +496,7 @@ class LumaDisplay(BasicDisplay):
             draw.line((xp, self.y,
                        xp, self.y - (trace[xp] - mnx) *
                            self.trace_height / delta),
-                       fill=self.color)
+                       fill=self.trace_color)
             
     def display(self, message, trace=None):
         """ Display a message.
