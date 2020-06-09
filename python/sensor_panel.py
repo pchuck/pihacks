@@ -171,7 +171,7 @@ if __name__ == '__main__':
     
     # arguments
     parser.add_argument('--display', type=str, default='dummy',
-                        choices=['ssd1306', 'lcd1602', 'dummy'],
+                        choices=['ssd1306', 'lcd1602', 'ili9341', 'dummy'],
                         help='The type of device for displaying info messages')
     parser.add_argument('--rotate', type=int, default=0,
                         choices=[0, 1, 2, 3],
@@ -224,12 +224,14 @@ if __name__ == '__main__':
     if(display_type == 'lcd1602'):
         lcd = umr.LCD1602Display(echo=False)
     elif(display_type == 'ssd1306'):
-        from PIL import ImageFont
-        # fp = os.path.dirname(sys.argv[0]) + '/../fonts'
-        # font = ImageFont.truetype(fp + '/Volter__28Goldfish_29.ttf', 14)
-        font = None # default font
         lcd = umr.SSD1306Display(echo=False, rotate=args.rotate,
                                  width=width, height=height)
+    elif(display_type == 'ili9341'):
+        from PIL import ImageFont
+        fp = os.path.dirname(sys.argv[0]) + '/../fonts'
+        font = ImageFont.truetype(fp + '/Volter__28Goldfish_29.ttf', 32)
+        lcd = umr.ILI9341Display(echo=False, rotate=args.rotate,
+                                 width=width, height=height, font=font)
     else:
         lcd = umr.DummyDisplay()
 

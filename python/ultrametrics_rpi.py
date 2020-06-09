@@ -34,6 +34,7 @@ from luma.core.render import canvas
     BME280 - a temperature, humidity and pressure sensor
     BasicDisplay - basic interface for displaying status text and graphs
     LCD1602Display - an LCD that can display two lines of status
+    ILI9341Display - an an LED that can display multiple lines of status/graphs
     SSD1306Display - an OLED that can display multiple lines of status/graphs
     LogDisplay - adheres to BasicDisplay interface and outputs to a logger
     PrintDisplay - adheres to BasicDisplay interface and outputs to console
@@ -56,6 +57,9 @@ class BuzzerInterface():
         pass
     
     def stop(self):
+        pass
+
+    def destroy(self):
         pass
 
 class DummyBuzzer(BuzzerInterface):
@@ -432,19 +436,12 @@ class LCD1602Display(BasicDisplay):
         self.mcp.output(3, 0)
         self.lcd.clear()
 
-class SSD1306Display(BasicDisplay):
-    """ implementation for displaying textual data on a display device
-
-    Notes
-    -----
-    LCD wiring - RPi (physical)
-     1 - GND - GND  (1)
-     2 - VCC - 5V   (4)
-     3 - SDA - SDA1 (3)
-     4 - SCL - SCL1 (5)
+class LumaDisplay(BasicDisplay):
+    """ implementation for displaying text/graphics on a device supported 
+        by the luma project
     """
-    def __init__(self, echo=False, width=128, height=32, rotate=0,
-                 trace_height=16,
+    def __init__(self, width, height, rotate=0,
+                 trace_height=16, echo=False,
                  font=None, color='White', i2c_addr=0x3c):
         """
         :param echo: Whether or not to echo writes to the logger.
@@ -463,15 +460,11 @@ class SSD1306Display(BasicDisplay):
         :type font: Font
         :param color: Drawing color. Ignored, if the display is monochrome.
         :type color: str
-        :param i2c_addr: The address of the device on the i2c bus.
+        :param i2c_addr: Address of the device on the i2c bus (if applicable).
         :type i2c_addr: int
         """
-        from luma.core.interface.serial import i2c
-        from luma.oled.device import ssd1306 as led
-        
-        logging.info('looking for OLED on i2c bus at %x' % i2c_addr)
-        serial = i2c(port=1, address=i2c_addr)
-        self.device = led(serial, height=height, width=width, rotate=rotate)
+        self._setup(rotate, width, height)
+        self.device.clear()
         logging.info('OLED found')
         self.device.clear()
         self.echo = echo
@@ -520,6 +513,26 @@ class SSD1306Display(BasicDisplay):
     def destroy(self):
         """ Clean up the display. """
         self.device.cleanup()
+
+class ILI9341Display(LumaDisplay):
+    def _setup(self, rotate, width, height, i2c_addr=None):
+        from luma.core.interface.serial import spi, noop
+        from luma.lcd.device import ili9341 as led
+        
+        logging.info('looking for LED on SPI bus')
+        serial = spi(port=0, device=0, gpio_DC=23, gpio_RST=24,
+                     bus_speed_hz=32000000)
+        self.device = led(serial, gpio_LIGHT=25, active_low=False,
+                          rotate=rotate)
+        self.device.backlight(True)
+
+class SSD1306Display(LumaDisplay):
+    def _setup(self, rotate, width, height, i2c_addr=0x3C):
+        from luma.core.interface.serial import i2c
+        from luma.oled.device import ssd1306 as led
+        logging.info('looking for OLED on i2c bus at %x' % i2c_addr)
+        serial = i2c(port=1, address=i2c_addr)
+        self.device = led(serial, height=height, width=width, rotate=rotate)
 
 class PrintDisplay(BasicDisplay):
     """ implementation for displaying textual data on the console

@@ -105,7 +105,7 @@ def init_device(device, n, block_orientation, rotate, inreverse, intensity):
     elif(device.lower() == 'ili9341'):
         from luma.core.interface.serial import spi, noop
         from luma.lcd.device import ili9341 as lcd
-        serial = spi(port=0, device=0, gpio_DC=24, gpio_RST=23,
+        serial = spi(port=0, device=0, gpio_DC=23, gpio_RST=24,
                      bus_speed_hz=32000000)
         device = lcd(serial, gpio_LIGHT=25, active_low=False)
         # , pwm_frequency=50) # this appears to be broken
