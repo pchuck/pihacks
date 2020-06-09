@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+# air quality sensor startup script for host piz
+#
+# on piz, sensor is mq5. no buzzer. only green (13) and red (26) are connected
+#
+$PIHOME/python/aq_hat.py --display=ssd1306 --width=128 --height=32 --sensor MQ5 --adc-addr 0x48 --basev=0.112 --buzzer-type=none 4 12 13 16 26 20

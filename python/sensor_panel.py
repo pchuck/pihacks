@@ -114,7 +114,8 @@ def main(width, height, sl, lcd, leds, buzzer, thsense, e_ip, ads, sensors):
     """ sends buzz=True to update routines, where audible alert is desired
     """
     l1s, tcs, tgs, tfs, hs = [], [], [], [], []
-    svs = [[0 for x in range(len(sensors))] for y in range(width)]
+    if(sensors):
+        svs = [[0 for x in range(len(sensors))] for y in range(width)]
     
     while(True):
         # no graphing, simple update for these
@@ -123,15 +124,16 @@ def main(width, height, sl, lcd, leds, buzzer, thsense, e_ip, ads, sensors):
         update_uptime()
 
         # air quality sensors
-        for i, sensor in enumerate(sensors):
-            mq = umr.MQSensor(sensor)
-            (mqv, mqvs) = update(width, lcd, leds, ads.read_voltage, sensor,
-                                 svs[i],
-                                 mq.baseline_v * 1.5, mq.baseline_v * 3,
-                                 vformat='%.2f', units=' V',
-                                 clear=False, farg=i, buzz=True)
-            mqb = ads.read_values(i)
-            sl.write(sensor, mqb, vformat='%d, %2f')
+        if(sensors): 
+            for i, sensor in enumerate(sensors):
+                mq = umr.MQSensor(sensor)
+                (mqv, mqvs) = update(width, lcd, leds, ads.read_voltage,
+                                     sensor, svs[i],
+                                     mq.baseline_v * 1.5, mq.baseline_v * 3,
+                                     vformat='%.2f', units=' V',
+                                     clear=False, farg=i, buzz=True)
+                mqb = ads.read_values(i)
+                sl.write(sensor, mqb, vformat='%d, %2f')
 
         # load
         (l1, l1s) = update(width, lcd, leds,
@@ -234,9 +236,11 @@ if __name__ == '__main__':
     lcd.display('initializing.. ')
        
     # list of attached analog sensors (e.g. mq135, light, etc)
-    sensors = args.sensors.split(',')
-    if(sensors):
-        ads = umr.ADS1115(args.adc_addr)
+    sensors = ads = None
+    if(args.sensors):
+        sensors = args.sensors.split(',')
+        if(sensors):
+            ads = umr.ADS1115(args.adc_addr)
 
     # write sensor readings to file
     sl = umr.SensorLog('sensor_panel_dht.%s.out' % umr.System.get_hostname())

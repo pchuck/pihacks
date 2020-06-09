@@ -137,7 +137,7 @@ if __name__ == '__main__':
         #sl.write('datetime, type, raw, voltage')
         while True:
             if(args.d != -1):
-                (tc, tf, h) = dht.sense_data() # read dht sensor
+                (tc, tf, h, p) = dht.sense_data() # read dht sensor
                 if(tf is not None): sl.write('ambient', tf, vformat='%.1f')
                 if(h is not None): sl.write('humidity', h, vformat='%.1f')
                 
