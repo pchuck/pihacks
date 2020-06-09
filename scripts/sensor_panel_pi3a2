@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+# sensor_panel, with output to an ssd1306 display device,
+# w/ system-only sensors
+#
+$PIHOME/python/sensor_panel.py --display=ili9341 --rotate=0 --width=320 --height=240 --trace-height=64 --trace-color=yellow --color=white 12 26 13 16
+

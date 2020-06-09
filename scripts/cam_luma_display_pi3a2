@@ -1,0 +1,3 @@
+#!/bin/sh
+#
+$PIHOME/python/cam_luma_display.py --mode=ascii
