@@ -10,11 +10,6 @@
 #
 import numpy as np 
   
-
-# 70 vs. 10 levels of 'gray'
-gs1 = " .'`^\",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
-gs2 = ' .:-=+*#%@'
-  
 def average_luminance(image): 
     """ 
     Given PIL Image (mode 'rgb'), return average value of grayscale value 
@@ -23,11 +18,14 @@ def average_luminance(image):
     w, h, d = im.shape
     return np.average(im.reshape(w * h * d))
 
-def image_to_ascii(image, cols, scale, moreLevels): 
+def image_to_ascii(image, cols, scale, levels): 
     """ 
-    Given Image and dims (rows, cols) returns an m*n list of Images  
+    Given an image returns an m*n list of text representing the image.
     """
-    global gs1, gs2
+
+    # 70 vs. 10 levels of 'gray'
+    GS1 = " .'`^\",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+    GS2 = ' .:-=+*#%@'
 
     W, H = image.size[0], image.size[1] # dimensions
     w = W / cols # tile width
@@ -48,8 +46,8 @@ def image_to_ascii(image, cols, scale, moreLevels):
             img = image.crop((x1, y1, x2, y2)) # extract tile
             al = average_luminance(img)
             # luminance to corresponding ascii character
-            if moreLevels: gsval = gs1[int(al * 70) >> 8] 
-            else: gsval = gs2[int(al * 10) >> 8]
+            if levels: gsval = GS1[int(al * 70) >> 8] 
+            else: gsval = GS2[int(al * 10) >> 8]
             asc[j] += gsval 
 
     return asc 
