@@ -131,11 +131,13 @@ def main(width, height, sl, lcd, leds, buzzer, thsense, e_ip, ads, sensors):
         if(sensors): 
             for i, sensor in enumerate(sensors):
                 mq = umr.MQSensor(sensor)
+                b = True
+                if(sensor == 'light'): b = False
                 (mqv, mqvs) = update(width, lcd, leds, ads.read_voltage,
                                      sensor, svs[i],
                                      mq.baseline_v * 1.5, mq.baseline_v * 3,
                                      vformat='%.2f', units=' V',
-                                     clear=False, farg=i, buzz=True)
+                                     clear=False, farg=i, buzz=b)
                 mqb = ads.read_values(i)
                 sl.write(sensor, mqb, vformat='%d, %2f')
 

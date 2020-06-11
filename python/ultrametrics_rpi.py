@@ -18,9 +18,6 @@ import math
 import socket
 from time import strftime, sleep
 from datetime import datetime
-import RPi.GPIO as GPIO
-from luma.core.render import canvas
-
 
 """
   Classes for controlling Raspberry Pi GPIO devices
@@ -74,33 +71,38 @@ class ActiveBuzzer(BuzzerInterface):
         :param pin: The pin number (in BCM) of the buzzer's input.
         :type pin: int
         """
+        import RPi.GPIO as GPIO
+        self.GPIO = GPIO
         self.pin = pin
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(pin, GPIO.OUT)
+        self.GPIO.setmode(self.GPIO.BCM)
+        self.GPIO.setup(pin, self.GPIO.OUT)
 
     def start(self):
         """ Start the buzzer. """
-        GPIO.output(self.pin, GPIO.HIGH)
+        self.GPIO.output(self.pin, self.GPIO.HIGH)
 
     def stop(self):
         """ Stop the buzzer. """
-        GPIO.output(self.pin, GPIO.LOW)
+        self.GPIO.output(self.pin, self.GPIO.LOW)
 
     def destroy(self):
-        GPIO.cleanup()
+        self.GPIO.cleanup()
 
 class PassiveBuzzer(BuzzerInterface):
     """ wrapper for controlling a passive buzzer
     """
+
     def __init__(self, pin):
         """
         :param pin: The pin number (in BCM) of the buzzer's input.
         :type pin: int
         """
+        import RPi.GPIO as GPIO
+        self.GPIO = GPIO
         self.pin = pin
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.pin, GPIO.OUT)
-        self.pwm = GPIO.PWM(self.pin, 1) # create the pwm, at 1Hz initially
+        self.GPIO.setmode(self.GPIO.BCM)
+        self.GPIO.setup(self.pin, self.GPIO.OUT)
+        self.pwm = self.GPIO.PWM(self.pin, 1) # create pwm at 1Hz initially
         
     def start(self, frequency=2000, duty=50):
         """ Start the buzzer. 
@@ -119,7 +121,7 @@ class PassiveBuzzer(BuzzerInterface):
         self.pwm.stop()
 
     def destroy(self):
-        GPIO.cleanup()
+        self.GPIO.cleanup()
 
 class StatusLeds():
     """ wrapper for controlling commonly used 4-led status bar
@@ -133,18 +135,20 @@ class StatusLeds():
         :param buzzer: Optional buzzer to sound above threshold.
         :type buzzer: Buzzer
         """
+        import RPi.GPIO as GPIO
+        self.GPIO = GPIO
         self.colorpins = colorpins
         self.colors, self.pins = colorpins.keys(), colorpins.values()
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
+        self.GPIO.setmode(self.GPIO.BCM)
+        self.GPIO.setwarnings(False)
         logging.info('using GPIO pins to drive LEDs: ')
         # enable output and flash each pin in sequence
         for color, pin in colorpins.items(): 
-            GPIO.setup(pin, GPIO.OUT)
+            self.GPIO.setup(pin, self.GPIO.OUT)
             logging.info('led pin %d - %s ' % (pin, color))
-            GPIO.output(pin, GPIO.HIGH)
+            self.GPIO.output(pin, self.GPIO.HIGH)
             sleep(0.2)
-            GPIO.output(pin, GPIO.LOW)
+            self.GPIO.output(pin, self.GPIO.LOW)
         self.buzzer = buzzer
 
     def light(self, color):
@@ -152,7 +156,7 @@ class StatusLeds():
         :param color: The pin number (in BCM) of the led to light
         :type color: int
         """
-        GPIO.output(self.colorpins.get(color), GPIO.HIGH)
+        self.GPIO.output(self.colorpins.get(color), self.GPIO.HIGH)
 
     def light_threshold(self, v, t1, t2, buzz=False):
         """ Light leds based on a value compared to thresholds. 
@@ -168,20 +172,20 @@ class StatusLeds():
         :type buzz: bool
         """
         if(v < t1):               
-            GPIO.output(self.colorpins.get('green'), GPIO.HIGH)
+            self.GPIO.output(self.colorpins.get('green'), self.GPIO.HIGH)
         elif(v >= t1 and v < t2):
-            GPIO.output(self.colorpins.get('yellow'), GPIO.HIGH)
+            self.GPIO.output(self.colorpins.get('yellow'), self.GPIO.HIGH)
         elif(v >= t2):
-            GPIO.output(self.colorpins.get('red'), GPIO.HIGH)
+            self.GPIO.output(self.colorpins.get('red'), self.GPIO.HIGH)
             if(self.buzzer and buzz): self.buzzer.start()
 
     def clear(self):
         """ Clear all leds. """
-        GPIO.output(list(self.colorpins.values()), GPIO.LOW)
+        self.GPIO.output(list(self.colorpins.values()), self.GPIO.LOW)
         if(self.buzzer): self.buzzer.stop()
 
     def destroy(self):
-        GPIO.cleanup()
+        self.GPIO.cleanup()
 
 class StatusLedsPwm():
     """ wrapper for controlling commonly used 4-led status bar
@@ -196,17 +200,19 @@ class StatusLedsPwm():
         :param buzzer: Optional buzzer to sound above threshold.
         :type buzzer: Buzzer
         """
+        import RPi.GPIO as GPIO
+        self.GPIO = GPIO
         self.colorpins = colorpins
         self.colors, self.pins = colorpins.keys(), colorpins.values()
         self.pwms = {}
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
+        self.GPIO.setmode(GPIO.BCM)
+        self.GPIO.setwarnings(False)
         logging.info('using GPIO pins to drive LEDs: ')
         # enable output and flash each pin in sequence
         for color, pin in colorpins.items(): 
-            GPIO.setup(pin, GPIO.OUT)
+            self.GPIO.setup(pin, self.GPIO.OUT)
             logging.info('led pin %d - %s ' % (pin, color))
-            self.pwms[color] = GPIO.PWM(pin, 1000)
+            self.pwms[color] = self.GPIO.PWM(pin, 1000)
             self.pwms[color].start(10)
             sleep(0.2)
         self.clear_all()
@@ -256,7 +262,7 @@ class StatusLedsPwm():
         self.pwms[color].ChangeDutyCycle(0)
 
     def destroy(self):
-        GPIO.cleanup()
+        self.GPIO.cleanup()
 
 class DHT11():
     """ dht11 temperature and humidity sensor wrapper
@@ -465,6 +471,8 @@ class LumaDisplay(BasicDisplay):
         :type i2c_addr: int
         """
         # display device-specific setup, creates self.device
+        from luma.core.render import canvas
+        self.canvas = canvas
         self._setup(rotate, width, height)
         self.device.clear()
         logging.info('OLED found')
@@ -476,7 +484,7 @@ class LumaDisplay(BasicDisplay):
         self.x = self.device.width
         self.y = self.device.height
         self.trace_height = trace_height
-        with canvas(self.device) as draw:
+        with self.canvas(self.device) as draw:
             draw.text((0, 0), 'initializing..',
                       fill=self.color, font=self.font)
 
@@ -506,7 +514,7 @@ class LumaDisplay(BasicDisplay):
         :param trace: Whether or not to display a graphical trace.
         :type trace: bool
         """
-        with canvas(self.device) as draw:
+        with self.canvas(self.device) as draw:
             draw.text((0, 0), message, fill=self.color, font=self.font)
             if(trace is not None and len(trace) > 0):
                 self._graph(draw, trace)
@@ -731,8 +739,8 @@ class System:
 
 class MQSensor:
     """
-    An encapsulation of an mq gas sensor with methods for normalizing its
-    output and other features.
+    An encapsulation of various sensors with methods for normalizing its
+    output and other features, particularly for MQ-series gas sensors.
     """
     def __init__(self, sensor_type):
         """
@@ -747,22 +755,26 @@ class MQSensor:
 
     @staticmethod
     def fix_name(unformatted_type):
-        return unformatted_type.upper().replace('-', '')
+        return unformatted_type.lower().replace('-', '')
     
     @staticmethod
     def get_baselines():
         adjustments = {
-            'MQ135': {'type': 'MQ135', 'r': 9713, 'v': 1.214233},
-              'MQ2': {'type':   'MQ2', 'r':  894, 'v': 0.111931},
-              'MQ9': {'type':   'MQ9', 'r': 1139, 'v': 0.142478},
-              'MQ7': {'type':   'MQ7', 'r': 2948, 'v': 0.368635},
-              'MQ6': {'type':   'MQ6', 'r': 1260, 'v': 0.157630}, 
-              'MQ5': {'type':   'MQ5', 'r': 1045, 'v': 0.130504},
+            'mq135': {'type': 'mq135', 'r': 9713, 'v': 1.214233},
+              'mq2': {'type':   'mq2', 'r':  894, 'v': 0.111931},
+              'mq9': {'type':   'mq9', 'r': 1139, 'v': 0.142478},
+              'mq7': {'type':   'mq7', 'r': 2948, 'v': 0.368635},
+              'mq6': {'type':   'mq6', 'r': 1260, 'v': 0.157630}, 
+              'mq5': {'type':   'mq5', 'r': 1045, 'v': 0.130504},
             
-            # also adjust temperature and humidity for comparison
-             'ambient': {'type':  'ambient', 'r': 80.0, 'v': 1.0},
-            'humidity': {'type': 'humidity', 'r': 25.0, 'v': 1.0},
-               'LIGHT': {'type':    'light', 'r': 7270, 'v': 0.909}
+            # also adjust other sensor data for comparison
+             'ambient': {'type':  'ambient', 'r':  80.0, 'v': 1.0},
+            'humidity': {'type': 'humidity', 'r':  25.0, 'v': 1.0},
+               'light': {'type':    'light', 'r':  7270, 'v': 0.909},
+            'pressure': {'type': 'pressure', 'r': 844.5, 'v': 1.0},
+                 'gpu': {'type':      'gpu', 'r':  55.0, 'v': 1.0},
+                 'cpu': {'type':      'cpu', 'r':  50.0, 'v': 1.0},
+                'load': {'type':     'load', 'r':   1.0, 'v': 1.0}
         }
         return(adjustments)
 
@@ -774,6 +786,7 @@ class MQSensor:
         :return: The baseline values for the sensor.
         :rtype: str
         """
+        sensor_type = sensor_type.lower()
         return(get_baselines()[sensor_type]['r'],
                get_baselines()[sensor_type]['v'])
         
@@ -785,23 +798,24 @@ class MQSensor:
         :return: A description of the gas(es) detected.
         :rtype: str
         """
-        if(sensor_type == 'MQ2'):
+        sensor_type = sensor_type.lower()
+        if(sensor_type == 'mq2'):
             return 'combustibles'
-        if(sensor_type == 'MQ3'):
+        if(sensor_type == 'mq3'):
             return 'alcohol'
-        if(sensor_type == 'MQ4'):
+        if(sensor_type == 'mq4'):
             return 'methane'
-        if(sensor_type == 'MQ5'):
+        if(sensor_type == 'mq5'):
             return 'LPG or methane'
-        if(sensor_type == 'MQ6'):
+        if(sensor_type == 'mq6'):
             return 'propane or butane'
-        if(sensor_type == 'MQ7'):
+        if(sensor_type == 'mq7'):
             return 'carbon monoxide'
-        if(sensor_type == 'MQ8'):
+        if(sensor_type == 'mq8'):
             return 'hydrogen'
-        if(sensor_type == 'MQ9'):
+        if(sensor_type == 'mq9'):
             return 'carbon monoxide or combustibles'
-        if(sensor_type == 'MQ135'):
+        if(sensor_type == 'mq135'):
             return 'contaminants, combustibles or CO2'
         if(sensor_type == 'ambient'):
             return 'ambient'
@@ -817,29 +831,26 @@ class MQSensor:
         :return: The gas(es) detected.
         :rtype: str
         """
-        if(sensor_type == 'MQ2'):
+        sensor_type = sensor_type.lower()
+        if(sensor_type == 'mq2'):
             return 'CG'
-        if(sensor_type == 'MQ3'):
+        if(sensor_type == 'mq3'):
             return 'Alc'
-        if(sensor_type == 'MQ4'):
+        if(sensor_type == 'mq4'):
             return 'MH4'
-        if(sensor_type == 'MQ5'):
+        if(sensor_type == 'mq5'):
             return 'MH4/LPG'
-        if(sensor_type == 'MQ6'):
+        if(sensor_type == 'mq6'):
             return 'LPG/Butane'
-        if(sensor_type == 'MQ7'):
+        if(sensor_type == 'mq7'):
             return 'CO'
-        if(sensor_type == 'MQ8'):
+        if(sensor_type == 'mq8'):
             return 'H2'
-        if(sensor_type == 'MQ9'):
+        if(sensor_type == 'mq9'):
             return 'CO/CG'
-        if(sensor_type == 'MQ135'):
+        if(sensor_type == 'mq135'):
             return 'CX/CO2'
-        if(sensor_type == 'ambient'):
-            return 'ambient'
-        if(sensor_type == 'humidity'):
-            return 'humidity'
-        return('unknown')
+        return(sensor_type) # else, return the provided type string
 
 class ADS1115:
     """ ADS11x5 analog/digital converter
