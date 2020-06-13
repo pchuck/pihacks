@@ -1,0 +1,17 @@
+{
+    "cpu": 
+    {"name": "cpu",
+     "baseline": 50,
+     "thresholds": [1.2, 1.5],
+     "leds": true,
+     "buzz": false,
+     "notify": false,
+     "display": true,
+     "trace": true,
+     "log": true,
+     "funcs": ["umr.System.get_cpu_temp()"],
+     "formats": ["%.2f"],
+     "units": ["C"],
+     "repeat": 10
+    }
+}

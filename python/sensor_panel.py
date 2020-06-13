@@ -19,156 +19,82 @@
 #
 import os
 import sys
+import json
 import logging
-from time import sleep
 import socket
+from time import sleep
 import argparse
 import ultrametrics_rpi as umr
 
-DTIME=1 # number of seconds between sensor readings
-PTIME=10 # number of dtimes to persist each sensor screen
-GPU_ALERT, GPU_ALARM=65, 80 # gpu thresholds
-CPU_ALERT, CPU_ALARM=60, 75 # cpu thresholds
-LOAD_ALERT, LOAD_ALARM=1.5, 3.0 # load thresholds
-T_ALERT, T_ALARM=85, 95 # temperature thresholds in farenheit
-# the BME280 board is too close to the cpu, so use a high threshold
-# T_ALERT, T_ALARM=90, 110 # temperature thresholds in farenheit
-H_ALERT, H_ALARM=60, 90 # humidity thresholds
-
 logging.basicConfig(level=logging.INFO)
 
-def update_time():
-    """ Update time display and status lights.
-    """
-    lcd.display(umr.System.get_time())
-    leds.light('blue')
-    sleep(PTIME * DTIME) ; leds.clear()
-
-def update_hostname(e_ip):
-    """ Update hostname and ip display.
-    """
-    hostname = umr.System.get_hostname()
-    try:
-        ip = umr.System.get_ip()
-        if(ip == e_ip):
-            leds.light('green')
-        else:
-            leds.light('red') # flag red if ip unexpected
-        lcd.display('host: ' + hostname + '\nip: ' + ip)
-    except socket.gaierror: 
-        leds.light('red') # flag red if gethostbyname fails
-        lcd.display('host: ' + hostname + '\nip: (gaierror)')
-    sleep(PTIME * DTIME) ; leds.clear()
-
-def update_uptime():
-    """ Update system uptime display and status lights.
-    """
-    (d, h, m, s) = umr.System.get_uptime()
-    lcd.display('uptime: \n%dd %02d:%02d:%02d' % (d, h, m, s))
-    leds.light('blue'); sleep(PTIME * DTIME) ; leds.clear()
-
-def update_th(lcd, leds, tf, h, p, buzz=False):
-    """ Update temperature and humidity display and status lights.
-    """
-    if(tf is not None and h is not None):
-        leds.light_threshold(tf, T_ALERT, T_ALARM, buzz=buzz)
-        leds.light_threshold(h, H_ALERT, H_ALARM, buzz=buzz)
-        if(p is None):
-            lcd.display('ambient: %.1f F\nhumidity: %.1f' % (tf, h))
-        else:
-            lcd.display('ambient: %.1f F\nhumidity: %.1f\npressure: %.1f' %
-                        (tf, h, p))
-    else:
-        leds.light('red')
-        lcd.display('ambient: Err\nhumidity: Err')
-    sleep(DTIME * PTIME) ; leds.clear()
-
 def sense_fifo(w, v, l):
-    """ Maintain list of sensor readings for graphical trace display.
+    """ Maintains list of sensor readings for graphical trace display.
+
+        :param w: The width of the fifo.
+        :type w: int
+        :param v: The value to add to the fifo.
+        :type v: int
+        :param l: The list of values representing the fifo.
+        :type l: int
     """
     if(v is not None):
         if(len(l) > w): l.pop(0)
         l.append(v)
     return l
 
-def update(width, lcd, leds, func, name, l, low, high, 
-           vformat='%s', units='', clear=True, farg=None, buzz=False):
+def update(sl, sensor, l, width, lcd, leds, interval):
     """ Generic display and status light update routine, with graphical trace.
+
+        :param sl: the sensor log.
+        :param sensor: the sensor.
+        :param l: fifo of sensor readings.
+        :param width: the size of the fifo (aka width of the trace display).
+        :param lcd: the lcd device.
+        :param leds: the status leds.
+        :param interval: the update interval in seconds.
     """
-    for i in range(PTIME):
-        if(farg is not None): v = func(farg)
-        else: v = func()
-        
-        l = sense_fifo(width, v, l)
-        if(v is None):
-            lcd.display(name + ': Err')
-        else:
-            lcd.display(name + ': ' + vformat % v + '%s' % units, trace=l)
-            leds.light_threshold(v, low, high, buzz=buzz);
-        sleep(DTIME)
-        if(clear):
-            leds.clear()
-            
-    return(v, l)
+    name = sensor['name']
+    px = sensor['preferred_index'] if('preferred_index' in sensor) else 0 
+    for i in range(sensor['repeat']):
+        try:
+            # evaluate the functions and store the returned values
+            v = list(map(eval, sensor['funcs']))
+            # update the graphical trace
+            l = sense_fifo(width, v[px], l) if sensor['trace'] else None
+        except Exception as e:
+            v = [None]
+            leds.light('red')
+            logging.error('Exception: ' + str(e))
+        if(sensor['display']):
+            if(None in v):
+                lcd.display(name + ':\nNone', trace=None)
+            else:
+                # display the result from the 'preferred' function 
+                lcd.display(name + ':\n' + sensor['formats'][px] % v[px] +
+                            ' %s' % sensor['units'][px], trace=l)
+                # update the status leds, buzzers and notifier
+                if('thresholds' in sensor):
+                    t0 = sensor['thresholds'][0] * sensor['baseline']
+                    t1 = sensor['thresholds'][1] * sensor['baseline']
+                    leds.light_threshold(v[px], t0, t1, buzz=sensor['buzz'])
+        sleep(interval)
+    leds.clear()
 
+    # log all values
+    if(sensor['log'] and v is not None and not None in v):
+        sl.write(name, tuple(v), ', '.join(sensor['formats']))
+    
+    return(l)
 
-def main(width, height, sl, lcd, leds, buzzer, thsense, e_ip, ads, sensors):
+def main(width, height, sl, lcd, leds, buzzer, sensors, interval):
     """ Main control: generic display, status lights and graphical trace.
     """
-    """ sends buzz=True to update routines, where audible alert is desired
-    """
-    l1s, tcs, tgs, tfs, hs = [], [], [], [], []
-    if(sensors):
-        svs = [[0 for x in range(len(sensors))] for y in range(width)]
-    
+    traces = [[] for x in range(len(sensors))]
     while(True):
-        # no graphing, simple update for these
-        update_time()
-        update_hostname(e_ip)
-        update_uptime()
-
-        # air quality sensors
-        if(sensors): 
-            for i, sensor in enumerate(sensors):
-                mq = umr.MQSensor(sensor)
-                b = True
-                if(sensor == 'light'): b = False
-                (mqv, mqvs) = update(width, lcd, leds, ads.read_voltage,
-                                     sensor, svs[i],
-                                     mq.baseline_v * 1.5, mq.baseline_v * 3,
-                                     vformat='%.2f', units=' V',
-                                     clear=False, farg=i, buzz=b)
-                mqb = ads.read_values(i)
-                sl.write(sensor, mqb, vformat='%d, %2f')
-
-        # load
-        (l1, l1s) = update(width, lcd, leds,
-                           umr.System.get_load1, 'load', l1s,
-                           LOAD_ALERT, LOAD_ALARM,
-                           vformat='%2.2f', clear=True, buzz=False)
-        sl.write('load', l1, vformat='%2.2f')
-
-        # cpu
-        (tc, tcs) = update(width, lcd, leds,
-                           umr.System.get_cpu_temp, 'cpu', tcs,
-                           CPU_ALERT, CPU_ALARM,
-                           vformat='%.1f', units=' C', clear=True, buzz=True)
-        sl.write('cpu', tc, vformat='%.1f')
-
-        # gpu
-        (tg, tgs) = update(width, lcd, leds,
-                           umr.System.get_gpu_temp, 'gpu', tgs,
-                           GPU_ALERT, GPU_ALARM,
-                           vformat='%.1f', units=' C', clear=True, buzz=True)
-        sl.write('gpu', tg, vformat='%.1f')
-
-        # no graphing for temperature, humidity and pressure
-        if(thsense):
-            (tc, tf, h, p) = thsense.sense_data()
-            update_th(lcd, leds, tf, h, p, buzz=False)
-            if(tf is not None): sl.write('ambient', tf, vformat='%.1f')
-            if(h is not None): sl.write('humidity', h, vformat='%.1f')
-            if(p is not None): sl.write('pressure', p, vformat='%.1f')
+        for i, a in enumerate(sensors):
+            traces[i] = update(sl, sensors[a], traces[i], width,
+                               lcd, leds, interval)
 
 
 if __name__ == '__main__':
@@ -176,8 +102,10 @@ if __name__ == '__main__':
                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     # arguments
+    parser.add_argument('--sensor-config', type=str, 
+                        help='The file to read sensor configuration from')
     parser.add_argument('--display', type=str, default='dummy',
-                        choices=['ssd1306', 'lcd1602', 'ili9341', 'dummy'],
+        choices=['ssd1306', 'lcd1602', 'ili9341', 'max7219', 'dummy'],
                         help='The type of device for displaying info messages')
     parser.add_argument('--rotate', type=int, default=0,
                         choices=[0, 1, 2, 3],
@@ -192,14 +120,14 @@ if __name__ == '__main__':
                         help='The color of the data trace')
     parser.add_argument('--color', type=str, default='white',
                         help='The color of text')
-    parser.add_argument('--adc-addr', type=str, default="0x48",
-                        help='The I2C address of the a/d converter')
-    parser.add_argument('--sensors', type=str,
-                        help='Comma-delimited name(s) of the analog sensor(s)')
+    parser.add_argument('--interval', type=float, default=1.0,
+                        help='The display update interval in seconds.')
+    parser.add_argument('--adc-addr', type=str, 
+                        help='Hex I2C address of the a/d converter, e.g. 0x48')
     parser.add_argument('--dht11', type=int, 
                         help='The data pin of the dht11 in BCM')
-    parser.add_argument('--bme280', type=str, 
-                        help='The hex i2c address of the bme280. e.g. 0x76')
+    parser.add_argument('--bme280-addr', type=str, 
+                        help='Hex I2C address of the bme280. e.g. 0x76')
     parser.add_argument('--buzzer-type', type=str, 
                         choices=['active', 'passive'],
                         help='The type of buzzer.')
@@ -233,14 +161,20 @@ if __name__ == '__main__':
     # display
     width, height, rotate = args.width, args.height, args.rotate
     tr_h, tr_c = args.trace_height, args.trace_color
-    color = args.color
     display_type = args.display.lower()
     if(display_type == 'lcd1602'):
         lcd = umr.LCD1602Display(echo=False)
     elif(display_type == 'ssd1306'):
-        lcd = umr.SSD1306Display(width, height, rotate=rotate, echo=False)
+        from PIL import ImageFont
+        text_h = int((height - tr_h) / 3)
+        font = None
+        fp = os.path.dirname(sys.argv[0]) + '/../fonts'
+        font = ImageFont.truetype(fp + '/pixelmix.ttf', text_h)
+        lcd = umr.SSD1306Display(width, height, rotate=rotate,
+                                 font=font, echo=False)
     elif(display_type == 'ili9341'):
         from PIL import ImageFont
+        color = args.color      
         fp = os.path.dirname(sys.argv[0]) + '/../fonts'
         font = ImageFont.truetype(fp + '/Volter__28Goldfish_29.ttf', 32)
         lcd = umr.ILI9341Display(width, height, rotate=rotate,
@@ -248,34 +182,40 @@ if __name__ == '__main__':
                                  color=color,
                                  font=font,
                                  echo=False)
+    elif(display_type =='max7219'):
+        from PIL import ImageFont
+        fp = os.path.dirname(sys.argv[0]) + '/../fonts'
+        font = ImageFont.truetype(fp + '/ProggyTiny.ttf', 8)
+        lcd = umr.MAX7219Display(width, height, rotate=rotate,
+                                 font=font,
+                                 echo=False)
     else:
         lcd = umr.DummyDisplay()
 
     lcd.display('initializing.. ')
-       
-    # list of attached analog sensors (e.g. mq135, light, etc)
-    sensors = ads = None
-    if(args.sensors):
-        sensors = args.sensors.split(',')
-        if(sensors):
-            ads = umr.ADS1115(args.adc_addr)
-
-    # write sensor readings to file
-    sl = umr.SensorLog('sensor_panel_dht.%s.out' % umr.System.get_hostname())
     
-    # DHT11
+    # write sensor readings to file
+    sl = umr.SensorLog('sensor_panel_%s.out' % umr.System.get_hostname())
+
+    # a/d converter, if attached
+    # note: ads is used dynamically, if referenced in sensor_config*.json
+    if(args.adc_addr is not None):
+        ads = umr.ADS1115(args.adc_addr)
+    
+    # DHT11 or BME280, if attached
+    # note: tsense is used dynamically, if referenced sensor_config*.json
     if(args.dht11 is not None):
-        thsense = umr.DHT11(args.dht11)
-    elif(args.bme280 is not None):
-        thsense = umr.BME280(int(args.bme280, 16))
-    else:
-        thsense = None
+        tsense = umr.DHT11(args.dht11)
+    elif(args.bme280_addr is not None):
+        tsense = umr.BME280(int(args.bme280_addr, 16))
 
     # the sensor panel
     try:
+        interval = args.interval
         lcd.display('running.. ')
-        eip = umr.System.get_ip()
-        main(width, height, sl, lcd, leds, buzzer, thsense, eip, ads, sensors)
+        with open(args.sensor_config) as jsonfile:
+            sensors = json.load(jsonfile)
+        main(width, height, sl, lcd, leds, buzzer, sensors, interval)
     except KeyboardInterrupt:
         leds.clear()
         lcd.destroy()

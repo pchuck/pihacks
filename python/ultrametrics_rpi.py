@@ -33,6 +33,7 @@ from datetime import datetime
     LCD1602Display - an LCD that can display two lines of status
     ILI9341Display - an an LED that can display multiple lines of status/graphs
     SSD1306Display - an OLED that can display multiple lines of status/graphs
+    MAX7219Display - an LED matrix that can display status/graphs
     LogDisplay - adheres to BasicDisplay interface and outputs to a logger
     PrintDisplay - adheres to BasicDisplay interface and outputs to console
     DummyDisplay - adheres to BasicDisplay interface with noop or console out
@@ -293,8 +294,42 @@ class DHT11():
         except RuntimeError:
             # dht doesn't always succeed. continue.
             return(None, None, None, None)
-
+        
         return(temperature_c, temperature_f, humidity, None)
+    
+    def sense_temperature(self):
+        """ Read the temperature from the DHT11 sensor.
+        .. note:: RuntimeError is handled internally. DT11 read often fails.
+
+        :return: the temperature in farenheit
+        :rtype: float
+        :raises: RuntimeError: when the DHT11 read fails
+        """
+        try:
+            temperature_c = self.dht.temperature
+            if(temperature_c is None): temperature_f = None
+            else: temperature_f = temperature_c * (9 / 5) + 32
+        except RuntimeError:
+            # dht doesn't always succeed. continue.
+            return(None)
+
+        return(temperature_f)
+
+    def sense_humidity(self):
+        """ Read the humidity from the DHT11 sensor.
+        .. note:: RuntimeError is handled internally. DT11 read often fails.
+
+        :return: the humidity.
+        :rtype: float
+        :raises: RuntimeError: when the DHT11 read fails
+        """
+        try:
+            humidity = self.dht.humidity
+        except RuntimeError:
+            # dht doesn't always succeed. continue.
+            return(None)
+
+        return(humidity)
 
 class BME280():
     """ BME/BMP280 temperature and humidity sensor wrapper
@@ -324,8 +359,46 @@ class BME280():
             pressure = self.bme280.pressure
         except RuntimeError:
             return(None, None, None, None)
-
+        
         return(temperature_c, temperature_f, humidity, pressure)
+
+    def sense_temperature(self):
+        """ Read the temperature.
+        :return: the temperature farenheit.
+        :rtype: float
+        """
+        try:
+            temperature_c = self.bme280.temperature
+            if(temperature_c is None): temperature_f = None
+            else: temperature_f = temperature_c * (9 / 5) + 32
+        except RuntimeError:
+            return None
+
+        return(temperature_f)
+
+    def sense_humidity(self):
+        """ Read the humidity.
+        :return: the humidity.
+        :rtype: float
+        """
+        try:
+            return self.bme280.humidity
+        except RuntimeError:
+            return None
+
+        return(humidity)
+
+    def sense_pressure(self):
+        """ Read the pressure.
+        :return: the pressure.
+        :rtype: float
+        """
+        try:
+            return self.bme280.pressure
+        except RuntimeError:
+            return None
+
+        return(pressure)
 
 class BasicDisplay:
     """ an informal interface for displaying textual data on a display device
@@ -486,7 +559,7 @@ class LumaDisplay(BasicDisplay):
         self.trace_height = trace_height
         with self.canvas(self.device) as draw:
             draw.text((0, 0), 'initializing..',
-                      fill=self.color, font=self.font)
+                      fill=self.color, font=font)
 
     def clear(self):
         """ Clear the display. """
@@ -497,9 +570,10 @@ class LumaDisplay(BasicDisplay):
         auxiliary method invoked by display() when trace data is provided
         for graphical display.
         """
+        NZ = .001 # negligible non-zero value to prevent div0 when max == min
         mxx = max(trace)
         mnx = min(trace)
-        delta = mxx - mnx + 1
+        delta = mxx - mnx + NZ
         for xp in range(len(trace)):
             draw.line((xp, self.y,
                        xp, self.y - (trace[xp] - mnx) *
@@ -544,6 +618,19 @@ class SSD1306Display(LumaDisplay):
         logging.info('looking for OLED on i2c bus at %x' % i2c_addr)
         serial = i2c(port=1, address=i2c_addr)
         self.device = led(serial, height=height, width=width, rotate=rotate)
+
+class MAX7219Display(LumaDisplay):
+    # note: !!! need to expose orientation, rotate, intensity, etc?
+    def _setup(self, rotate, width, height):
+        from luma.core.interface.serial import spi, noop
+        from luma.led_matrix.device import max7219 as led
+        logging.info('looking for matrix on spi..')
+        serial = spi(port=0, device=0, gpio=noop())
+        self.device = led(serial, cascaded=4,
+                          block_orientation=90,
+                          rotate=0,
+                          blocks_arranged_in_reverse_order=True)
+        self.device.contrast(1)
 
 class PrintDisplay(BasicDisplay):
     """ implementation for displaying textual data on the console
@@ -714,6 +801,10 @@ class System:
         return(days, hours, minutes, seconds)
 
     @staticmethod
+    def get_uptime_str():
+        return('%dd %02d:%02d:%02d' % System.get_uptime())
+
+    @staticmethod
     def get_time():
         """
         :return: A string containing the formatted system time.
@@ -727,7 +818,7 @@ class System:
         :return: The current formatted date and system time
         :rtype: str
         """
-        return '{:%Y-%m-%d %H:%M:%S}'.format(datetime.now())
+        return '{:%Y-%m-%d %H:%M:%S.%f}'.format(datetime.now())
 
     @staticmethod
     def get_timestamp():

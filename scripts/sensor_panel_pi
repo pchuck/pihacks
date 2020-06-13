@@ -3,4 +3,4 @@
 # sensor_panel, with output to an lcd1602 display device,
 # DHT device and status leds on the specified pins
 #
-$PIHOME/python/sensor_panel.py --display=lcd1602 --dht11=4 22 24 23 27
+$PIHOME/python/sensor_panel.py --sensor-config=$PIHOME/config/sensor_config_pi.json --display=lcd1602 --dht11=4 22 24 23 27

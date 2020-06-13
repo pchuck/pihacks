@@ -3,5 +3,4 @@
 # sensor_panel, with output to an ssd1306 display device,
 # bme280 device and status leds on the specified pins
 #
-$PIHOME/python/sensor_panel.py --display=ssd1306 --rotate=2 --width=128 --height=64 --bme280=0x76 --adc-addr=0x48 --sensors=MQ135,MQ7,light --buzzer-type=passive --buzzer-pin=25 12 26 13 16
-
+$PIHOME/python/sensor_panel.py --sensor-config=$PIHOME/config/sensor_config_pi3.json --display=ssd1306 --rotate=2 --width=128 --height=64 --bme280=0x76 --adc-addr=0x48 --buzzer-type=passive --buzzer-pin=25 --interval=1 12 26 13 16
