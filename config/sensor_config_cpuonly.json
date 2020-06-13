@@ -2,7 +2,7 @@
     "cpu": 
     {"name": "cpu",
      "baseline": 50,
-     "thresholds": [1.2, 1.5],
+     "thresholds": [1.2, 1.5, 1.9],
      "leds": true,
      "buzz": false,
      "notify": false,

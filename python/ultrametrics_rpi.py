@@ -124,17 +124,79 @@ class PassiveBuzzer(BuzzerInterface):
     def destroy(self):
         self.GPIO.cleanup()
 
+class Notifier():
+    """ wrapper for ringing a buzzer and sending notifications
+    """
+    def __init__(self, name, t1, t2, t3, buzz, notify, buzzer=None):
+        """
+        :param t1: The lower threshold.
+        :type t1: int
+        :param t2: The middle threshold.
+        :type t2: int
+        :param t3: The upper threshold.
+        :type t3: int
+        :param buzz: Whether to sound the buzzer above threshold.
+        :type buzz: bool
+        :param notify: Whether to send notifications above upper threshold.
+        :type notify: bool
+        :param buzzer: Optional buzzer device to sound above threshold.
+        :type buzzer: Buzzer
+        """
+        from pushover import Client
+        self.buzzer = buzzer
+        self.triggered = False
+        self.client = Client
+        self.name = name
+        self.gas = MQSensor.type_to_gas(name)
+        self.t1 = t1
+        self.t2 = t2
+        self.t3 = t3
+        self.buzz = buzz
+        self.notify = notify
+        self.host = System.get_hostname()
+
+    def test_threshold(self, v):
+        """ Send notifications based on a value compared to thresholds. 
+        Assumes 3 thresholds.
+
+        :param v: The value to compare to the thresholds.
+        :type v: int
+        """
+        if(v < self.t1):
+            if(self.buzzer and self.buzz):
+                self.buzzer.stop()
+        elif(v >= self.t1 and v < self.t2):
+            if(self.buzzer and self.buzz):
+                self.buzzer.stop()
+        elif(v >= self.t2 and v < self.t3):
+            if(self.buzzer and self.buzz):
+                self.buzzer.start()
+        # activate alarms above t3
+        elif(v >= self.t3):
+            if(self.buzzer and self.buzz): self.buzzer.start()
+            if(self.notify and not self.triggered):
+                self.client().send_message(
+                    "%s detected %.2f > %.2f!" % (self.gas, v, self.t3),
+                    title="%s: %s alarm" % (self.host, self.name))
+                self.triggered = True
+
+        # clear any active alarms below t2
+        if(v < self.t2 and self.notify and self.triggered):
+            self.client().send_message(
+                "%s clearing. %.2f < %.2f)" % (self.gas, v, self.t2),
+                title="%s: %s" % (self.host, self.name))
+            self.triggered = False
+
+
 class StatusLeds():
     """ wrapper for controlling commonly used 4-led status bar
         used to indicate four relative levels of criticality.
         Order the lights by 'severity', e.g. red, ylw, grn, blu.
     """
-    def __init__(self, colorpins, buzzer=None):
+    def __init__(self, colorpins):
         """
         :param colorpins: The pin numbers (in BCM) of the leds.
         :type colorpins: list
-        :param buzzer: Optional buzzer to sound above threshold.
-        :type buzzer: Buzzer
         """
         import RPi.GPIO as GPIO
         self.GPIO = GPIO
@@ -150,7 +212,6 @@ class StatusLeds():
             self.GPIO.output(pin, self.GPIO.HIGH)
             sleep(0.2)
             self.GPIO.output(pin, self.GPIO.LOW)
-        self.buzzer = buzzer
 
     def light(self, color):
         """ Light the specified led.
@@ -159,7 +220,7 @@ class StatusLeds():
         """
         self.GPIO.output(self.colorpins.get(color), self.GPIO.HIGH)
 
-    def light_threshold(self, v, t1, t2, buzz=False):
+    def light_threshold(self, v, t1, t2):
         """ Light leds based on a value compared to thresholds. 
         Assumes 3 lights and 2 thresholds.
 
@@ -169,8 +230,6 @@ class StatusLeds():
         :type t1: int
         :param t2: The upper threshold.
         :type t2: int
-        :param buzz: Whether to sound the buzzer above threshold.
-        :type buzz: bool
         """
         if(v < t1):               
             self.GPIO.output(self.colorpins.get('green'), self.GPIO.HIGH)
@@ -178,12 +237,10 @@ class StatusLeds():
             self.GPIO.output(self.colorpins.get('yellow'), self.GPIO.HIGH)
         elif(v >= t2):
             self.GPIO.output(self.colorpins.get('red'), self.GPIO.HIGH)
-            if(self.buzzer and buzz): self.buzzer.start()
 
     def clear(self):
         """ Clear all leds. """
         self.GPIO.output(list(self.colorpins.values()), self.GPIO.LOW)
-        if(self.buzzer): self.buzzer.stop()
 
     def destroy(self):
         self.GPIO.cleanup()
@@ -194,12 +251,10 @@ class StatusLedsPwm():
         Order the lights by 'severity', e.g. red, ylw, grn, blu.
         Uses PWM to control brightness.
     """
-    def __init__(self, colorpins, buzzer=None):
+    def __init__(self, colorpins):
         """
         :param colorpins: The pin numbers (in BCM) of the leds.
         :type colorpins: list
-        :param buzzer: Optional buzzer to sound above threshold.
-        :type buzzer: Buzzer
         """
         import RPi.GPIO as GPIO
         self.GPIO = GPIO
@@ -217,7 +272,6 @@ class StatusLedsPwm():
             self.pwms[color].start(10)
             sleep(0.2)
         self.clear_all()
-        self.buzzer = buzzer
 
     def light(self, color, brightness=100):
         """ Light the specified led.
@@ -228,7 +282,7 @@ class StatusLedsPwm():
         """
         self.pwms[color].ChangeDutyCycle(brightness)
 
-    def light_threshold(self, v, t1, t2, brightness=100, buzz=False):
+    def light_threshold(self, v, t1, t2, brightness=100):
         """ Light leds based on a value compared to thresholds. 
         Assumes 3 lights and 2 thresholds.
 
@@ -238,8 +292,6 @@ class StatusLedsPwm():
         :type t1: int
         :param t2: The upper threshold.
         :type t2: int
-        :param buzz: Whether to sound the buzzer above threshold.
-        :type buzz: bool
         """
         if(v < t1):
             self.pwms['green'].ChangeDutyCycle(brightness)
@@ -247,13 +299,11 @@ class StatusLedsPwm():
             self.pwms['yellow'].ChangeDutyCycle(brightness)
         elif(v >= t2):
             self.pwms['red'].ChangeDutyCycle(brightness)
-            if(self.buzzer and buzz): self.buzzer.start()
 
     def clear_all(self):
         """ Clear all leds. """
         for color, pin in self.colorpins.items(): 
             self.pwms[color].ChangeDutyCycle(0)
-        if(self.buzzer): self.buzzer.stop()
         
     def clear(self, color):
         """ Clear the specified led.

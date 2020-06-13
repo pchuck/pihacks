@@ -2,7 +2,7 @@
     "temperature":
     {"name": "ambient",
      "baseline": 70,
-     "thresholds": [1.5, 2.0],
+     "thresholds": [1.5, 2.0, 2.5],
      "leds": true,
      "buzz": false,
      "notify": false,
@@ -17,7 +17,7 @@
     "humidity":
     {"name": "humidity",
      "baseline": 50,
-     "thresholds": [1.3, 1.8],
+     "thresholds": [1.3, 1.7, 1.9],
      "leds": true,
      "buzz": false,
      "notify": false,
@@ -32,7 +32,7 @@
     "pressure":
     {"name": "pressure",
      "baseline": 850,
-     "thresholds": [1.1, 1.3],
+     "thresholds": [1.1, 1.3, 1.5],
      "leds": true,
      "buzz": false,
      "notify": false,
@@ -46,9 +46,6 @@
     },
     "uptime": 
     {"name": "uptime",
-     "leds": false,
-     "buzz": false,
-     "notify": false,
      "display": true,
      "trace": false,
      "log": false,
@@ -60,9 +57,9 @@
     "load":
     {"name": "load",
      "baseline": 1.0,
-     "thresholds": [1.5, 2.0],
+     "thresholds": [1.5, 2.0, 5.0],
      "leds": true,
-     "buzz": false,
+     "buzz": true,
      "notify": false,
      "display": true,
      "trace": true,
@@ -74,9 +71,6 @@
     },
     "time":
     {"name": "time",
-     "leds": true,
-     "buzz": false,
-     "notify": false,
      "display": true,
      "trace": false,
      "log": false,
@@ -87,9 +81,6 @@
     },
     "hostname":
     {"name": "hostname",
-     "leds": false,
-     "buzz": false,
-     "notify": false,
      "display": true,
      "trace": false,
      "log": false,
@@ -100,9 +91,6 @@
     },
     "ip": 
     {"name": "ip",
-     "leds": false,
-     "buzz": false,
-     "notify": false,
      "display": true,
      "trace": false,
      "log": false,
@@ -114,7 +102,7 @@
     "cpu": 
     {"name": "cpu",
      "baseline": 50,
-     "thresholds": [1.2, 1.5],
+     "thresholds": [1.2, 1.5, 1.9],
      "leds": true,
      "buzz": false,
      "notify": false,
@@ -129,9 +117,9 @@
     "gpu": 
     {"name": "gpu",
      "baseline": 55,
-     "thresholds": [1.2, 1.5],
+     "thresholds": [1.2, 1.5, 1.9],
      "leds": true,
-     "buzz": false,
+     "buzz": true,
      "notify": false,
      "display": true,
      "trace": true,
@@ -144,7 +132,7 @@
     "mq135": 
     {"name": "MQ135",
      "baseline": 9713,
-     "thresholds": [1.5, 3],
+     "thresholds": [1.5, 1.75, 2.0],
      "leds": true,
      "buzz": true,
      "notify": true,
@@ -160,7 +148,7 @@
     "mq7": 
     {"name": "MQ7",
      "baseline": 2948,
-     "thresholds": [1.5, 3],
+     "thresholds": [1.5, 1.75, 2.0],
      "leds": true,
      "buzz": true,
      "notify": true,
@@ -176,10 +164,10 @@
     "light": 
     {"name": "light",
      "baseline": 7270,
-     "thresholds": [1.5, 3],
+     "thresholds": [1.5, 3, 5.0],
      "leds": true,
      "buzz": true,
-     "notify": true,
+     "notify": false,
      "display": true,
      "trace": true,
      "log": true,

@@ -43,7 +43,7 @@ def sense_fifo(w, v, l):
         l.append(v)
     return l
 
-def update(sl, sensor, l, width, lcd, leds, interval, lb):
+def update(sl, sensor, l, width, lcd, leds, ntfrs, interval, lb):
     """ Generic display and status light update routine, with graphical trace.
 
         :param sl: the sensor log.
@@ -75,9 +75,11 @@ def update(sl, sensor, l, width, lcd, leds, interval, lb):
                             ' %s' % sensor['units'][px], trace=l)
                 # update the status leds, buzzers and notifier
                 if('thresholds' in sensor):
-                    t0 = sensor['thresholds'][0] * sensor['baseline']
-                    t1 = sensor['thresholds'][1] * sensor['baseline']
-                    leds.light_threshold(v[px], t0, t1, buzz=sensor['buzz'])
+                    t1 = sensor['thresholds'][0] * sensor['baseline']
+                    t2 = sensor['thresholds'][1] * sensor['baseline']
+                    t3 = sensor['thresholds'][2] * sensor['baseline']
+                    leds.light_threshold(v[0], t1, t2)
+                    ntfrs[name].test_threshold(v[0])
         sleep(interval)
     leds.clear()
 
@@ -87,14 +89,14 @@ def update(sl, sensor, l, width, lcd, leds, interval, lb):
     
     return(l)
 
-def main(width, height, sl, lcd, leds, buzzer, sensors, interval, lb):
+def main(width, height, sl, lcd, leds, ntfrs, buzzer, sensors, interval, lb):
     """ Main control: generic display, status lights and graphical trace.
     """
     traces = [[] for x in range(len(sensors))]
     while(True):
         for i, a in enumerate(sensors):
             traces[i] = update(sl, sensors[a], traces[i], width,
-                               lcd, leds, interval, lb)
+                               lcd, leds, ntfrs, interval, lb)
 
 
 if __name__ == '__main__':
@@ -103,46 +105,46 @@ if __name__ == '__main__':
     
     # arguments
     parser.add_argument('--sensor-config', type=str, 
-                        help='The file to read sensor configuration from')
+        help='The file to read sensor configuration from')
     parser.add_argument('--display', type=str, default='dummy',
         choices=['ssd1306', 'lcd1602', 'ili9341', 'max7219', 'dummy'],
-                        help='The type of device for displaying info messages')
+        help='The type of device for displaying info messages')
     parser.add_argument('--rotate', type=int, default=0,
-                        choices=[0, 1, 2, 3],
-                        help='The amount to rotate the display.')
+        choices=[0, 1, 2, 3],
+        help='The amount to rotate the display.')
     parser.add_argument('--width', type=int, default=128,
-                        help='The width of the display in pixels')
+        help='The width of the display in pixels')
     parser.add_argument('--height', type=int, default=32,
-                        help='The height of the display in pixels')
+        help='The height of the display in pixels')
     parser.add_argument('--trace-height', type=int, default=16,
-                        help='The height of the data trace in pixels')
+        help='The height of the data trace in pixels')
     parser.add_argument('--trace-color', type=str, default='yellow',
-                        help='The color of the data trace')
+        help='The color of the data trace')
     parser.add_argument('--color', type=str, default='white',
-                        help='The color of text')
+        help='The color of text')
     parser.add_argument('--interval', type=float, default=1.0,
-                        help='The display update interval in seconds.')
+        help='The display update interval in seconds.')
     parser.add_argument('--line-break', type=str, default='\n',
-                        help='The line-break character. Tiny display override')
+        help='The line-break character. Tiny display override')
     parser.add_argument('--adc-addr', type=str, 
-                        help='Hex I2C address of the a/d converter, e.g. 0x48')
+        help='Hex I2C address of the a/d converter, e.g. 0x48')
     parser.add_argument('--dht11', type=int, 
-                        help='The data pin of the dht11 in BCM')
+        help='The data pin of the dht11 in BCM')
     parser.add_argument('--bme280-addr', type=str, 
-                        help='Hex I2C address of the bme280. e.g. 0x76')
+        help='Hex I2C address of the bme280. e.g. 0x76')
     parser.add_argument('--buzzer-type', type=str, 
-                        choices=['active', 'passive'],
-                        help='The type of buzzer.')
+        choices=['active', 'passive'],
+        help='The type of buzzer.')
     parser.add_argument('--buzzer-pin', type=int,
-                        help='The control pin for the buzzer.')
+        help='The control pin for the buzzer.')
     parser.add_argument('b', type=int, 
-                        help='The signal pin to the first status led in BCM')
+        help='The signal pin to the first status led in BCM')
     parser.add_argument('g', type=int, 
-                        help='The signal pin to the second status led in BCM')
+        help='The signal pin to the second status led in BCM')
     parser.add_argument('y', type=int, 
-                        help='The signal pin to the third status led in BCM')
+        help='The signal pin to the third status led in BCM')
     parser.add_argument('r', type=int, 
-                        help='The signal pin to the last status led in BCM')
+        help='The signal pin to the last status led in BCM')
 
     args = parser.parse_args()
 
@@ -153,12 +155,12 @@ if __name__ == '__main__':
         buzzer = umr.ActiveBuzzer(args.buzzer_pin)
     else:
         buzzer = umr.DummyBuzzer()
-
+    
     # LED wiring - colors and their associated pins
     # status_leds() expects the pins to be in order of increasing 'severity'
     colorpins = { 'blue': args.b, 'green': args.g,
                   'yellow': args.y, 'red': args.r }
-    leds = umr.StatusLeds(colorpins, buzzer=buzzer)
+    leds = umr.StatusLeds(colorpins)
 
     # display
     width, height, rotate = args.width, args.height, args.rotate
@@ -219,7 +221,22 @@ if __name__ == '__main__':
         lcd.display('running.. ')
         with open(args.sensor_config) as jsonfile:
             sensors = json.load(jsonfile)
-        main(width, height, sl, lcd, leds, buzzer, sensors, interval, lb)
+
+        # notifiers
+        ntfrs = {}
+        for key, sensor in sensors.items():
+            sensor = sensors[key]
+            if('thresholds' in sensor):
+                name = sensor['name']
+                t1 = sensor['thresholds'][0] * sensor['baseline']
+                t2 = sensor['thresholds'][1] * sensor['baseline']
+                t3 = sensor['thresholds'][2] * sensor['baseline']
+                ntfrs[name] = umr.Notifier(name, t1, t2, t3,
+                                           sensor['buzz'],
+                                           sensor['notify'], buzzer=buzzer)
+
+        main(width, height, sl, lcd, leds, ntfrs, buzzer, sensors,
+             interval, lb)
     except KeyboardInterrupt:
         leds.clear()
         lcd.destroy()
