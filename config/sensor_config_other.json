@@ -1,0 +1,34 @@
+{
+    "mq9": 
+    {"name": "MQ9",
+     "baseline": 1139,
+     "thresholds": [1.2, 1.4, 1.6],
+     "leds": true,
+     "buzz": true,
+     "notify": true,
+     "display": true,
+     "trace": true,
+     "log": true,
+     "preferred_index": 1,
+     "funcs": ["ads.read_raw(0)", "ads.read_voltage(0)"],
+     "formats": ["%d", "%f"],
+     "units": ["", "V"],
+     "repeat": 5
+    },
+    "mq5": 
+    {"name": "MQ5",
+     "baseline": 898,
+     "thresholds": [1.2, 1.4, 1.6],
+     "leds": true,
+     "buzz": true,
+     "notify": true,
+     "display": true,
+     "trace": true,
+     "log": true,
+     "preferred_index": 1,
+     "funcs": ["ads.read_raw(1)", "ads.read_voltage(1)"],
+     "formats": ["%d", "%f"],
+     "units": ["", "V"],
+     "repeat": 5
+    }
+}

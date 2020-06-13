@@ -37,11 +37,9 @@ LOG_PREFIX='aq_hat'
 ADR_BITS=16
 
 # factor of v_baseline (see below) warranting a warning, alert or alarm
-warn_factor = 1.5
-alert_factor = 2.0
-alarm_factor = 3.0
-# for testing
-#warn_factor = 1.2; alert_factor = 1.5;  alarm_factor = 2.0
+warn_factor = 1.2
+alert_factor = 1.4
+alarm_factor = 1.6
 
 
 if __name__ == '__main__':

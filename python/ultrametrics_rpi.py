@@ -906,7 +906,7 @@ class MQSensor:
               'mq9': {'type':   'mq9', 'r': 1139, 'v': 0.142478},
               'mq7': {'type':   'mq7', 'r': 2948, 'v': 0.368635},
               'mq6': {'type':   'mq6', 'r': 1260, 'v': 0.157630}, 
-              'mq5': {'type':   'mq5', 'r': 1045, 'v': 0.130504},
+              'mq5': {'type':   'mq5', 'r':  898, 'v': 0.112128},
             
             # also adjust other sensor data for comparison
              'ambient': {'type':  'ambient', 'r':  70.0, 'v': 1.0},
