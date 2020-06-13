@@ -5,4 +5,8 @@
 # on piz2, sensor is mq9. green (26), yellow (13) and red (16) are connected.
 # also dht (4) and buzzer (25).
 #
-$PIHOME/python/aq_hat.py --display=ssd1306 --width=128 --height=64 --sensor MQ9 --adc-addr 0x48 --basev=0.142478 --buzzer-type=passive 4 12 26 13 16 25
+$PIHOME/python/aq_hat.py \
+    --sensor-info=$PIHOME/config/sensor_info.json \
+    --display=ssd1306 --width=128 --height=64 \
+    --sensor mq9 --adc-addr 0x48 --basev=0.142478 \
+    --buzzer-type=passive 4 12 26 13 16 25

@@ -4,4 +4,8 @@
 #
 # on piz, sensor is mq5. no buzzer. only green (13) and red (26) are connected
 #
-$PIHOME/python/aq_hat.py --display=ssd1306 --width=128 --height=32 --sensor MQ5 --adc-addr 0x48 --basev=0.112 --buzzer-type=none 4 12 13 16 26 20
+$PIHOME/python/aq_hat.py \
+    --sensor-info=$PIHOME/config/sensor_info.json \
+    --display=ssd1306 --width=128 --height=32 \
+    --sensor mq5 --adc-addr 0x48 \
+    --buzzer-type=none 4 12 13 16 26 20

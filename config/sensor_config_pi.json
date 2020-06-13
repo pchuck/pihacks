@@ -1,120 +1,65 @@
 {
-    "time":
-    {"name": "time",
-     "display": true,
-     "trace": false,
-     "log": false,
-     "funcs": ["umr.System.get_time()"],
-     "formats": ["%s"],
-     "units": [""],
-     "repeat": 1
+    "time": {
+	"name": "time",
+	"display": true,
+	"funcs": ["umr.System.get_time()"],
+	"formats": ["%s"],
+	"units": [""],
+	"repeat": 1
     },
-    "hostname":
-    {"name": "hostname",
-     "display": true,
-     "trace": false,
-     "log": false,
-     "funcs": ["umr.System.get_hostname()"],
-     "formats": ["%s"],
-     "units": [""],
-     "repeat": 1
+    "hostname": {
+	"name": "hostname",
+	"display": true,
+	"funcs": ["umr.System.get_hostname()"],
+	"formats": ["%s"],
+	"units": [""],
+	"repeat": 1
     },
-    "ip": 
-    {"name": "ip",
-     "display": true,
-     "trace": false,
-     "log": false,
-     "funcs": ["umr.System.get_ip()"],
-     "formats": ["%s"],
-     "units": [""],
-     "repeat": 1
+    "ip": {
+	"name": "ip",
+	"display": true,
+	"funcs": ["umr.System.get_ip()"],
+	"formats": ["%s"],
+	"units": [""],
+	"repeat": 1
     },
-    "uptime": 
-    {"name": "uptime",
-     "display": true,
-     "trace": false,
-     "log": false,
-     "funcs": ["umr.System.get_uptime_str()"],
-     "formats": ["%s"],
-     "units": [""],
-     "repeat": 1
+    "uptime": {
+	"name": "uptime",
+	"display": true,
+	"funcs": ["umr.System.get_uptime_str()"],
+	"formats": ["%s"],
+	"units": [""],
+	"repeat": 1
     },
-    "load":
-    {"name": "load",
-     "baseline": 1.0,
-     "thresholds": [1.5, 2.0, 5.0],
-     "leds": true,
-     "buzz": false,
-     "notify": false,
-     "display": true,
-     "trace": true,
-     "log": true,
-     "funcs": ["umr.System.get_load1()"],
-     "formats": ["%2.2f"],
-     "units": [""],
-     "repeat": 2
+    "load": {
+	"name": "load",
+	"leds": true,
+	"display": true,
+	"log": true,
+	"funcs": ["umr.System.get_load1()"],
+	"formats": ["%2.2f"],
+	"units": [""],
+	"repeat": 1
     },
-    "cpu": 
-    {"name": "cpu",
-     "baseline": 50,
-     "note": "high threshold based on 80C hard throttle",
-     "thresholds": [1.2, 1.4, 1.6],
-     "leds": true,
-     "buzz": false,
-     "notify": false,
-     "display": true,
-     "trace": true,
-     "log": true,
-     "funcs": ["umr.System.get_cpu_temp()"],
-     "formats": ["%.2f"],
-     "units": ["C"],
-     "repeat": 2
+    "ambient": {
+	"name": "ambient",
+	"leds": true,
+	"display": true,
+	"log": true,
+	"funcs": ["tsense.sense_temperature()"],
+	"formats": ["%.1f"],
+	"units": ["F"],
+	"repeat": 2
     },
-    "gpu": 
-    {"name": "gpu",
-     "baseline": 55,
-     "note": "high threshold based on 85C hard throttle",
-     "thresholds": [1.2, 1.36, 1.46],
-     "leds": true,
-     "buzz": false,
-     "notify": false,
-     "display": true,
-     "trace": true,
-     "log": true,
-     "funcs": ["umr.System.get_gpu_temp()"],
-     "formats": ["%.2f"],
-     "units": ["C"],
-     "repeat": 2
-    },
-    "ambient":
-    {"name": "ambient",
-     "baseline": 70,
-     "thresholds": [1.3, 1.5, 1.7],
-     "leds": true,
-     "buzz": false,
-     "notify": false,
-     "display": true,
-     "trace": true,
-     "log": true,
-     "funcs": ["tsense.sense_temperature()"],
-     "formats": ["%.1f"],
-     "units": ["F"],
-     "repeat": 2
-    },
-    "humidity":
-    {"name": "humidity",
-     "baseline": 50,
-     "thresholds": [1.3, 1.7, 1.9],
-     "leds": true,
-     "buzz": false,
-     "notify": false,
-     "display": true,
-     "trace": true,
-     "log": true,
-     "funcs": ["tsense.sense_humidity()"],
-     "formats": ["%.1f"],
-     "units": ["%"],
-     "repeat": 2
+    "humidity": {
+	"name": "humidity",
+	"leds": true,
+	"display": true,
+	"log": true,
+	"funcs": ["tsense.sense_humidity()"],
+	"formats": ["%.1f"],
+	"units": ["%"],
+	"repeat": 2
     }
 }
 

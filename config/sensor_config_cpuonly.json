@@ -1,18 +1,15 @@
 {
-    "cpu": 
-    {"name": "cpu",
-     "baseline": 50,
-     "note": "high threshold based on 80C hard throttle",
-     "thresholds": [1.2, 1.4, 1.6],
-     "leds": true,
-     "buzz": false,
-     "notify": false,
-     "display": true,
-     "trace": true,
-     "log": true,
-     "funcs": ["umr.System.get_cpu_temp()"],
-     "formats": ["%.2f"],
-     "units": ["C"],
-     "repeat": 10
+    "cpu": {
+	"name": "cpu",
+	"leds": true,
+	"buzz": false,
+	"notify": false,
+	"display": true,
+	"trace": true,
+	"log": true,
+	"funcs": ["umr.System.get_cpu_temp()"],
+	"formats": ["%.2f"],
+	"units": ["C"],
+	"repeat": 10
     }
 }

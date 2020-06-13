@@ -1,6 +1,0 @@
-#!/bin/sh
-#
-# sensor_panel, with output to an ssd1306 display device,
-# DHT device and status leds on the specified pins
-#
-$PIHOME/python/sensor_panel.py --sensor-config=$PIHOME/config/sensor_config_sysonly.json --display ssd1306 --bme280-addr=0x76 --rotate=2 --width=128 --height=64 12 26 13 16

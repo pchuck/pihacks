@@ -12,6 +12,7 @@
 # Distributed under the Mozilla Public License
 # http://www.mozilla.org/NPL/MPL-1.1.txt
 #
+import json
 import logging
 import os
 import math
@@ -38,7 +39,7 @@ from datetime import datetime
     PrintDisplay - adheres to BasicDisplay interface and outputs to console
     DummyDisplay - adheres to BasicDisplay interface with noop or console out
     SensorLog - writes data to file for later analysis
-    MQSensor - mq gas sensor
+    Sensor - an abstraction for sensors
     ADS1115 - analog to digital converter
 
     Sphinx markup is used for documentation generation.
@@ -127,14 +128,12 @@ class PassiveBuzzer(BuzzerInterface):
 class Notifier():
     """ wrapper for ringing a buzzer and sending notifications
     """
-    def __init__(self, name, t1, t2, t3, buzz, notify, buzzer=None):
+    def __init__(self, sensor, px, buzz, notify, buzzer=None):
         """
-        :param t1: The lower threshold.
-        :type t1: int
-        :param t2: The middle threshold.
-        :type t2: int
-        :param t3: The upper threshold.
-        :type t3: int
+        :param sensor: The sensor.
+        :type sensor: dict
+        :param px: The preferred index (into the value/baseline list).
+        :type sensor: int
         :param buzz: Whether to sound the buzzer above threshold.
         :type buzz: bool
         :param notify: Whether to send notifications above upper threshold.
@@ -146,11 +145,12 @@ class Notifier():
         self.buzzer = buzzer
         self.triggered = False
         self.client = Client
-        self.name = name
-        self.gas = MQSensor.type_to_gas(name)
-        self.t1 = t1
-        self.t2 = t2
-        self.t3 = t3
+        self.name = sensor.name
+        self.short = sensor.short
+        # lower, middle and upper alert thresholds
+        self.t1 = sensor.thresholds[0] * sensor.baseline[px]
+        self.t2 = sensor.thresholds[1] * sensor.baseline[px]
+        self.t3 = sensor.thresholds[2] * sensor.baseline[px]
         self.buzz = buzz
         self.notify = notify
         self.host = System.get_hostname()
@@ -450,7 +450,7 @@ class BME280():
 
         return(pressure)
 
-class BasicDisplay:
+class BasicDisplay():
     """ an informal interface for displaying textual data on a display device
     """
     def clear(self):
@@ -878,120 +878,34 @@ class System:
         """
         return datetime.now().timestamp()
 
-class MQSensor:
+class Sensor():
     """
-    An encapsulation of various sensors with methods for normalizing its
+    An encapsulation of a sensor with attributes for normalizing its
     output and other features, particularly for MQ-series gas sensors.
     """
-    def __init__(self, sensor_type):
+    def __init__(self, sensor_file, sensor_type):
         """
+        :param sensor_file: The file containing sensor info.
+        :type sensor_file: str
         :param sensor_type: The type of the sensor, e.g. "MQ6"
         :type sensor_type: str
         """
-        self.sensor_type = MQSensor.fix_name(sensor_type)
-        self.description = MQSensor.type_to_description(self.sensor_type)
-        self.gas         = MQSensor.type_to_gas(self.sensor_type)
-        self.baseline_r  = MQSensor.get_baselines()[self.sensor_type]['r']
-        self.baseline_v  = MQSensor.get_baselines()[self.sensor_type]['v']
+        with open(sensor_file) as jsonfile:
+            self.sensor = json.load(jsonfile)
+
+        self.key = Sensor.fix_name(sensor_type)
+        self.sensor = self.sensor[self.key]
+        self.name = self.sensor['name']
+        self.short = self.sensor['short']
+        self.description = self.sensor['long']
+        self.thresholds = self.sensor['thresholds']
+        self.baseline = self.sensor['baseline']
+        self.baseline_r = self.sensor['baseline'][0]
+        self.baseline_v = self.sensor['baseline'][1]
 
     @staticmethod
     def fix_name(unformatted_type):
         return unformatted_type.lower().replace('-', '')
-    
-    @staticmethod
-    def get_baselines():
-        adjustments = {
-            'mq135': {'type': 'mq135', 'r': 9713, 'v': 1.214233},
-              'mq2': {'type':   'mq2', 'r':  894, 'v': 0.111931},
-              'mq9': {'type':   'mq9', 'r': 1139, 'v': 0.142478},
-              'mq7': {'type':   'mq7', 'r': 2948, 'v': 0.368635},
-              'mq6': {'type':   'mq6', 'r': 1260, 'v': 0.157630}, 
-              'mq5': {'type':   'mq5', 'r':  898, 'v': 0.112128},
-            
-            # also adjust other sensor data for comparison
-             'ambient': {'type':  'ambient', 'r':  70.0, 'v': 1.0},
-            'humidity': {'type': 'humidity', 'r':  50.0, 'v': 1.0},
-               'light': {'type':    'light', 'r':  7270, 'v': 0.909},
-            'pressure': {'type': 'pressure', 'r': 840.0, 'v': 1.0},
-                 'gpu': {'type':      'gpu', 'r':  55.0, 'v': 1.0},
-                 'cpu': {'type':      'cpu', 'r':  50.0, 'v': 1.0},
-                'load': {'type':     'load', 'r':   1.0, 'v': 1.0}
-        }
-        return(adjustments)
-
-    @staticmethod
-    def get_baseline(sensor_type):
-        """
-        :param sensor_type: The type of the sensor, e.g. "MQ6".
-        :type sensor_type: str
-        :return: The baseline values for the sensor.
-        :rtype: str
-        """
-        sensor_type = sensor_type.lower()
-        return(MQSensor.get_baselines()[sensor_type]['r'],
-               MQSensor.get_baselines()[sensor_type]['v'])
-        
-    @staticmethod
-    def type_to_description(sensor_type):
-        """
-        :param sensor_type: The type of the sensor, e.g. "MQ6".
-        :type sensor_type: str
-        :return: A description of the gas(es) detected.
-        :rtype: str
-        """
-        sensor_type = sensor_type.lower()
-        if(sensor_type == 'mq2'):
-            return 'combustibles'
-        if(sensor_type == 'mq3'):
-            return 'alcohol'
-        if(sensor_type == 'mq4'):
-            return 'methane'
-        if(sensor_type == 'mq5'):
-            return 'LPG or methane'
-        if(sensor_type == 'mq6'):
-            return 'propane or butane'
-        if(sensor_type == 'mq7'):
-            return 'carbon monoxide'
-        if(sensor_type == 'mq8'):
-            return 'hydrogen'
-        if(sensor_type == 'mq9'):
-            return 'carbon monoxide or combustibles'
-        if(sensor_type == 'mq135'):
-            return 'contaminants, combustibles or CO2'
-        if(sensor_type == 'ambient'):
-            return 'ambient'
-        if(sensor_type == 'humidity'):
-            return 'humidity'
-        return('unknown')
-
-    @staticmethod
-    def type_to_gas(sensor_type):
-        """
-        :param sensor_type: The type of the sensor, e.g. "MQ6".
-        :type sensor_type: str
-        :return: The gas(es) detected.
-        :rtype: str
-        """
-        sensor_type = sensor_type.lower()
-        if(sensor_type == 'mq2'):
-            return 'CG'
-        if(sensor_type == 'mq3'):
-            return 'Alc'
-        if(sensor_type == 'mq4'):
-            return 'MH4'
-        if(sensor_type == 'mq5'):
-            return 'MH4/LPG'
-        if(sensor_type == 'mq6'):
-            return 'LPG/Butane'
-        if(sensor_type == 'mq7'):
-            return 'CO'
-        if(sensor_type == 'mq8'):
-            return 'H2'
-        if(sensor_type == 'mq9'):
-            return 'CO/CG'
-        if(sensor_type == 'mq135'):
-            return 'CX/CO2'
-        return(sensor_type) # else, return the provided type string
 
 class ADS1115:
     """ ADS11x5 analog/digital converter

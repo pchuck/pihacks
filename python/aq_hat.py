@@ -36,17 +36,14 @@ LOG_PREFIX='aq_hat'
 # number of bits precision of the ADC converter
 ADR_BITS=16
 
-# factor of v_baseline (see below) warranting a warning, alert or alarm
-warn_factor = 1.2
-alert_factor = 1.4
-alarm_factor = 1.6
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='aq hat',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # required arguments, the bcm pin numbers of...
+    parser.add_argument('--sensor-info', type=str, 
+                        help='The file to read sensor info from')
     parser.add_argument('--display', type=str, default='dummy',
                         choices=['ssd1306', 'lcd1602', 'dummy'],
                         help='The type of device for displaying info messages')
@@ -58,8 +55,6 @@ if __name__ == '__main__':
                         help='The type/name of the sensor')
     parser.add_argument('--adc-addr', type=str, default="0x48",
                         help='The I2C address of the a/d converter')
-    parser.add_argument('--basev', type=float, default='0.2',
-                        help='The baseline (clean air) voltage for the sensor')
     parser.add_argument('--buzzer-type', type=str, default='passive',
                         choices=['active', 'passive', 'none'],
                         help='The type of buzzer.')
@@ -117,14 +112,16 @@ if __name__ == '__main__':
         lcd = umr.DummyDisplay()
 
     # create the i2c bus and adc object
-    mq = umr.MQSensor(args.sensor)
+    sensor = umr.Sensor(args.sensor_info, args.sensor)
     i2c = busio.I2C(board.SCL, board.SDA)
     ads = ADS.ADS1115(i2c, address=int(args.adc_addr, 16))
     adc = AnalogIn(ads, ADS.P0)
-    v_baseline = args.basev # baseline voltage
+
+    # notifier
+    notifier = umr.Notifier(sensor, 1, True, True,  buzzer=buzzer)
 
     # sensor data log
-    sl = umr.SensorLog(LOG_PREFIX + "_" + mq.sensor_type.lower() + ".out")
+    sl = umr.SensorLog(LOG_PREFIX + "_" + sensor.name + ".out")
 
     values = []
     i = 0
@@ -142,54 +139,22 @@ if __name__ == '__main__':
             r, v = adc.value, adc.voltage # read aq sensor
             if(len(values) > args.width): values.pop(0) # update trace
             values.append(r)
-            sl.write_message('%s, %d, %f' % (mq.sensor_type, r, v))
+            sl.write_message('%s, %d, %f' % (sensor.name.upper(), r, v))
             if(args.height == 32): # two line display
                 lcd.display('AQ=%+.2f%% (%.3fv)' %
-                            (-v * 100.0 / v_baseline + 100.0, v), values)
+                    (-v * 100.0 / sensor.baseline_v + 100.0, v), values)
             else: # 4 line text display
                 lcd.display('AQ=%+.2f%%\nv=%.4fv/5v\nr=%d/2^%d' %
-                            (-v * 100.0 / v_baseline + 100.0, v, r, ADR_BITS),
-                            values)
-            leds.clear()
-            if(v > v_baseline * alarm_factor): # update lights/buzzer
-                if(trigger_level != 4):
-                    Client().send_message(
-                        "%s: > %.1fx %s levels detected! (%.2fv)" % (
-                        host, alarm_factor, mq.sensor_type, v),
-                        title="%s: alarm" % host)
-                leds.light('red')
-                buzzer.start();
-                trigger_level = 4
-            elif(v > v_baseline * alert_factor):
-                if(trigger_level != 3):
-                    Client().send_message(
-                        "%s: > %.1fx %s levels detected (%.2fv)" % (
-                        host, alert_factor, mq.sensor_type, v),
-                        title="%s: alert" % host)
-                leds.light('red')
-                buzzer.stop();
-                trigger_level = 3
-            elif(v > v_baseline * warn_factor):
-                if(trigger_level != 2):
-                    Client().send_message(
-                        "%s: > %.1fx %s levels detected (%.2fv)" % (
-                        host, warn_factor, mq.sensor_type, v),
-                        title="%s: warn" % host)
-                leds.light('yellow')
-                buzzer.stop();
-                trigger_level = 2
-            else:
-                if(trigger_level != 1):
-                    Client().send_message(
-                        "%s: %s levels cleared (%.2fv)" % (
-                        host, mq.sensor_type, v),
-                        title="%s: ok" % host)
-
-                if(i % 10 == 0):
-                    leds.light('green')
-                buzzer.stop();
-                trigger_level = 1 # reset the trigger
+                    (-v * 100.0 / sensor.baseline_v + 100.0, v, r, ADR_BITS),
+                     values)
+            
+            v_baseline = sensor.baseline[1] # voltage
+            t1 = sensor.thresholds[0] * sensor.baseline_v
+            t2 = sensor.thresholds[1] * sensor.baseline_v
+            leds.light_threshold(v, t1, t2)
+            notifier.test_threshold(v)
             time.sleep(1)
+            leds.clear()
 
     except KeyboardInterrupt:
         leds.clear()
