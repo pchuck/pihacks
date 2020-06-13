@@ -30,18 +30,15 @@ logging.basicConfig(level=logging.INFO)
 # log file prefix for sensor data logging
 LOG_PREFIX='aq_hat'
 
-# ADS1115 addr pin addresses (specify via --adc-addr)
-#   0v - 0x48
-#   5v - 0x49
 # number of bits precision of the ADC converter
 ADR_BITS=16
-
+# ADS1115 addresses (specify via --adc-addr)
+#   addr @ 0v - 0x48, @ 5v - 0x49
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='aq hat',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    # required arguments, the bcm pin numbers of...
     parser.add_argument('--sensor-info', type=str, 
                         help='The file to read sensor info from')
     parser.add_argument('--display', type=str, default='dummy',
