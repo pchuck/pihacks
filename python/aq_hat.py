@@ -124,12 +124,9 @@ if __name__ == '__main__':
     sl = umr.SensorLog(LOG_PREFIX + "_" + sensor.name + ".out")
 
     values = []
-    i = 0
-    trigger_level = 0
     try:
-        i += 1
         lcd.display('initializing.. ')
-        #sl.write('datetime, type, raw, voltage')
+        #sl.write('datetime, type, raw, voltage') # don't rewrite the header
         while True:
             if(args.d != -1):
                 (tc, tf, h, p) = dht.sense_data() # read dht sensor
@@ -140,15 +137,18 @@ if __name__ == '__main__':
             if(len(values) > args.width): values.pop(0) # update trace
             values.append(r)
             sl.write_message('%s, %d, %f' % (sensor.name.upper(), r, v))
+            
+            # calculate a relative percentage of air-quality, for display
+            v_rel = -v * 100.0 / sensor.baseline_v + 100.0
             if(args.height == 32): # two line display
                 lcd.display('AQ=%+.2f%% (%.3fv)' %
-                    (-v * 100.0 / sensor.baseline_v + 100.0, v), values)
+                                (v_rel, v), values)
             else: # 4 line text display
                 lcd.display('AQ=%+.2f%%\nv=%.4fv/5v\nr=%d/2^%d' %
-                    (-v * 100.0 / sensor.baseline_v + 100.0, v, r, ADR_BITS),
-                     values)
-            
-            v_baseline = sensor.baseline[1] # voltage
+                                (v_rel, v, r, ADR_BITS), values)
+
+            # calculate thresholds, test and take action
+            v_baseline = sensor.baseline[1]
             t1 = sensor.thresholds[0] * sensor.baseline_v
             t2 = sensor.thresholds[1] * sensor.baseline_v
             leds.light_threshold(v, t1, t2)
