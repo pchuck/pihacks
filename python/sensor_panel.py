@@ -57,7 +57,9 @@ def update(sl, sinfo, sconfig, l, width, lcd, leds, ntfrs, interval, lb):
         :param lb: the line-break character (or '', for single-line display)
     """
     name = sconfig['name']
-    px = sconfig['preferred_index'] if('preferred_index' in sconfig) else 0 
+    # for sensors with both raw and voltage value, px controls which is used
+    px = sconfig['preferred_index'] if('preferred_index' in sconfig) else 0
+    # repeat controls how long each sensor's info is displayed
     for i in range(sconfig['repeat']):
         try:
             # evaluate the functions and store the returned values
@@ -66,10 +68,13 @@ def update(sl, sinfo, sconfig, l, width, lcd, leds, ntfrs, interval, lb):
             if('trace' in sconfig and sconfig['trace']):
                 l = sense_fifo(width, v[px], l)
         except Exception as e:
+        # if a value can't be retrieved, light led, set value 'None' & continue
             v = [None]
             leds.light('red')
             logging.error('Exception: ' + str(e))
+        # if the 'display' is configured, update the display device..
         if(sconfig['display']):
+            # short-circuit complex logic and display 'None' if no value
             if(None in v):
                 lcd.display(name + (':%sNone' % lb), trace=None)
             else:
@@ -98,6 +103,7 @@ def main(width, height, sl, lcd, leds, ntfrs, buzzer, sinfos, sconfigs, interval
     """ Main control: generic display, status lights and graphical trace.
     """
     traces = [[] for x in range(len(sconfigs))]
+    # continually update all configured sensors
     while(True):
         for i, a in enumerate(sconfigs):
             sinfo = sinfos[a] if a in sinfos else None
