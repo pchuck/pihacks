@@ -1,8 +1,8 @@
 {
-    "temperature":
+    "ambient":
     {"name": "ambient",
      "baseline": 70,
-     "thresholds": [1.5, 2.0, 2.5],
+     "thresholds": [1.3, 1.5, 1.7],
      "leds": true,
      "buzz": false,
      "notify": false,
@@ -31,8 +31,8 @@
     },
     "pressure":
     {"name": "pressure",
-     "baseline": 850,
-     "thresholds": [1.1, 1.3, 1.5],
+     "baseline": 840,
+     "thresholds": [1.1, 1.2, 1.3],
      "leds": true,
      "buzz": false,
      "notify": false,
@@ -102,9 +102,10 @@
     "cpu": 
     {"name": "cpu",
      "baseline": 50,
-     "thresholds": [1.2, 1.5, 1.9],
+     "note": "high threshold based on 80C hard throttle",
+     "thresholds": [1.2, 1.4, 1.6],
      "leds": true,
-     "buzz": false,
+     "buzz": true,
      "notify": false,
      "display": true,
      "trace": true,
@@ -117,7 +118,8 @@
     "gpu": 
     {"name": "gpu",
      "baseline": 55,
-     "thresholds": [1.2, 1.5, 1.9],
+     "note": "high threshold based on 85C hard throttle",
+     "thresholds": [1.2, 1.36, 1.46],
      "leds": true,
      "buzz": true,
      "notify": false,
@@ -132,7 +134,7 @@
     "mq135": 
     {"name": "MQ135",
      "baseline": 9713,
-     "thresholds": [1.5, 1.75, 2.0],
+     "thresholds": [1.4, 1.6, 1.8],
      "leds": true,
      "buzz": true,
      "notify": true,
@@ -148,7 +150,7 @@
     "mq7": 
     {"name": "MQ7",
      "baseline": 2948,
-     "thresholds": [1.5, 1.75, 2.0],
+     "thresholds": [1.4, 1.6, 1.8],
      "leds": true,
      "buzz": true,
      "notify": true,
@@ -164,9 +166,10 @@
     "light": 
     {"name": "light",
      "baseline": 7270,
-     "thresholds": [1.5, 3, 5.0],
+     "note": "Low threshold for night/day. Others not used.",
+     "thresholds": [1.8, 5.0, 5.1],
      "leds": true,
-     "buzz": true,
+     "buzz": false,
      "notify": false,
      "display": true,
      "trace": true,

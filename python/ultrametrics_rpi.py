@@ -909,10 +909,10 @@ class MQSensor:
               'mq5': {'type':   'mq5', 'r': 1045, 'v': 0.130504},
             
             # also adjust other sensor data for comparison
-             'ambient': {'type':  'ambient', 'r':  80.0, 'v': 1.0},
-            'humidity': {'type': 'humidity', 'r':  25.0, 'v': 1.0},
+             'ambient': {'type':  'ambient', 'r':  70.0, 'v': 1.0},
+            'humidity': {'type': 'humidity', 'r':  50.0, 'v': 1.0},
                'light': {'type':    'light', 'r':  7270, 'v': 0.909},
-            'pressure': {'type': 'pressure', 'r': 844.5, 'v': 1.0},
+            'pressure': {'type': 'pressure', 'r': 840.0, 'v': 1.0},
                  'gpu': {'type':      'gpu', 'r':  55.0, 'v': 1.0},
                  'cpu': {'type':      'cpu', 'r':  50.0, 'v': 1.0},
                 'load': {'type':     'load', 'r':   1.0, 'v': 1.0}
@@ -928,8 +928,8 @@ class MQSensor:
         :rtype: str
         """
         sensor_type = sensor_type.lower()
-        return(get_baselines()[sensor_type]['r'],
-               get_baselines()[sensor_type]['v'])
+        return(MQSensor.get_baselines()[sensor_type]['r'],
+               MQSensor.get_baselines()[sensor_type]['v'])
         
     @staticmethod
     def type_to_description(sensor_type):
