@@ -43,7 +43,7 @@ def sense_fifo(w, v, l):
         l.append(v)
     return l
 
-def update(sl, sensor, l, width, lcd, leds, interval):
+def update(sl, sensor, l, width, lcd, leds, interval, lb):
     """ Generic display and status light update routine, with graphical trace.
 
         :param sl: the sensor log.
@@ -68,10 +68,10 @@ def update(sl, sensor, l, width, lcd, leds, interval):
             logging.error('Exception: ' + str(e))
         if(sensor['display']):
             if(None in v):
-                lcd.display(name + ':\nNone', trace=None)
+                lcd.display(name + (':%sNone' % lb), trace=None)
             else:
                 # display the result from the 'preferred' function 
-                lcd.display(name + ':\n' + sensor['formats'][px] % v[px] +
+                lcd.display(name + ':%s' % lb + sensor['formats'][px] % v[px] +
                             ' %s' % sensor['units'][px], trace=l)
                 # update the status leds, buzzers and notifier
                 if('thresholds' in sensor):
@@ -87,14 +87,14 @@ def update(sl, sensor, l, width, lcd, leds, interval):
     
     return(l)
 
-def main(width, height, sl, lcd, leds, buzzer, sensors, interval):
+def main(width, height, sl, lcd, leds, buzzer, sensors, interval, lb):
     """ Main control: generic display, status lights and graphical trace.
     """
     traces = [[] for x in range(len(sensors))]
     while(True):
         for i, a in enumerate(sensors):
             traces[i] = update(sl, sensors[a], traces[i], width,
-                               lcd, leds, interval)
+                               lcd, leds, interval, lb)
 
 
 if __name__ == '__main__':
@@ -122,6 +122,8 @@ if __name__ == '__main__':
                         help='The color of text')
     parser.add_argument('--interval', type=float, default=1.0,
                         help='The display update interval in seconds.')
+    parser.add_argument('--line-break', type=str, default='\n',
+                        help='The line-break character. Tiny display override')
     parser.add_argument('--adc-addr', type=str, 
                         help='Hex I2C address of the a/d converter, e.g. 0x48')
     parser.add_argument('--dht11', type=int, 
@@ -187,6 +189,7 @@ if __name__ == '__main__':
         fp = os.path.dirname(sys.argv[0]) + '/../fonts'
         font = ImageFont.truetype(fp + '/ProggyTiny.ttf', 8)
         lcd = umr.MAX7219Display(width, height, rotate=rotate,
+                                 trace_height=tr_h,
                                  font=font,
                                  echo=False)
     else:
@@ -212,10 +215,11 @@ if __name__ == '__main__':
     # the sensor panel
     try:
         interval = args.interval
+        lb = args.line_break
         lcd.display('running.. ')
         with open(args.sensor_config) as jsonfile:
             sensors = json.load(jsonfile)
-        main(width, height, sl, lcd, leds, buzzer, sensors, interval)
+        main(width, height, sl, lcd, leds, buzzer, sensors, interval, lb)
     except KeyboardInterrupt:
         leds.clear()
         lcd.destroy()

@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+# sensor_panel, with output to an ssd1306 display device,
+# DHT device and status leds on the specified pins
+#
+$PIHOME/python/sensor_panel.py --sensor-config=$PIHOME/config/sensor_config_cpuonly.json --display max7219 --rotate=1 --width=32 --height=8 --trace-height=4 --line-break='' --interval=0.1 12 26 13 16
