@@ -1,9 +1,6 @@
 {
     "time":
     {"name": "time",
-     "leds": true,
-     "buzz": false,
-     "notify": false,
      "display": true,
      "trace": false,
      "log": false,
@@ -14,9 +11,6 @@
     },
     "hostname":
     {"name": "hostname",
-     "leds": false,
-     "buzz": false,
-     "notify": false,
      "display": true,
      "trace": false,
      "log": false,
@@ -27,9 +21,6 @@
     },
     "ip": 
     {"name": "ip",
-     "leds": false,
-     "buzz": false,
-     "notify": false,
      "display": true,
      "trace": false,
      "log": false,
@@ -40,9 +31,6 @@
     },
     "uptime": 
     {"name": "uptime",
-     "leds": false,
-     "buzz": false,
-     "notify": false,
      "display": true,
      "trace": false,
      "log": false,
@@ -69,7 +57,8 @@
     "cpu": 
     {"name": "cpu",
      "baseline": 50,
-     "thresholds": [1.2, 1.5, 1.9],
+     "note": "high threshold based on 80C hard throttle",
+     "thresholds": [1.2, 1.4, 1.6],
      "leds": true,
      "buzz": false,
      "notify": false,
@@ -84,7 +73,8 @@
     "gpu": 
     {"name": "gpu",
      "baseline": 55,
-     "thresholds": [1.2, 1.5, 1.9],
+     "note": "high threshold based on 85C hard throttle",
+     "thresholds": [1.2, 1.36, 1.46],
      "leds": true,
      "buzz": false,
      "notify": false,

@@ -2,7 +2,8 @@
     "cpu": 
     {"name": "cpu",
      "baseline": 50,
-     "thresholds": [1.2, 1.5, 1.9],
+     "note": "high threshold based on 80C hard throttle",
+     "thresholds": [1.2, 1.4, 1.6],
      "leds": true,
      "buzz": false,
      "notify": false,
