@@ -9,9 +9,9 @@
 # an array of sensors (system and/or GPIO input driven).
 #
 # In its current configuration:
-#   reads from system metrics and a DHT humidity/temperature sensor
-#   outputs text readings and graphical traces an LCD1602 or SSD1306 display
-#   updates status LED's based on sensor readings thresholds
+#   reads from system metrics and configured sensors
+#   supports a variety of display devices for sensor output and traces.
+#   updates status LED's and sends alerts based on sensor readings/ thresholds.
 #
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
