@@ -22,7 +22,7 @@
 	"short": "MH4/LPG",
 	"long": "LPG or methane",
 	"baseline": [898, 0.112128],
-        "thresholds": [1.4, 1.6, 1.8]
+        "thresholds": [1.2, 1.4, 1.6]
     },
     "mq6": {
 	"name": "mq6",
@@ -36,7 +36,7 @@
 	"short": "CO",
 	"long": "carbon monoxide",
 	"baseline": [2948, 0.368635],
-	"thresholds": [1.4, 1.6, 1.8]
+	"thresholds": [1.1, 1.2, 1.3]
     },
     "mq8": {
 	"name": "mq8",
@@ -49,14 +49,14 @@
 	"short": "CO/CG",
 	"long": "carbon monoxide or combustibles",
 	"baseline": [1139, 0.142478],
-        "thresholds": [1.4, 1.6, 1.8]
+        "thresholds": [1.15, 1.25, 1.35]
     },
     "mq135": {
 	"name": "mq135",
 	"short": "CX/CO2",
 	"long": "contaminants, combustibles or CO2",
 	"baseline": [9713, 1.214233],
-	"thresholds": [1.4, 1.6, 1.8]
+	"thresholds": [1.2, 1.4, 1.6]
     },
     "board": {
 	"name": "board",
