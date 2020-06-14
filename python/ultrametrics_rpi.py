@@ -27,19 +27,21 @@ from datetime import datetime
     PassiveBuzzer - a passive buzzer component, with start() and stop()
     ActiveBuzzer - an active buzzer component, with start() and stop()
     DummyBuzzer - a buzzer that doesn't make any sound.
+    Notifier - a controller for sending text notifications on thresholds
     StatusLeds - status lights controlled individually or by threshold
     StatusLedsPwm - status lights, pwm version with brightness control
     DHT11 - a temperature and humidity sensor
     BME280 - a temperature, humidity and pressure sensor
     BasicDisplay - basic interface for displaying status text and graphs
     LCD1602Display - an LCD that can display two lines of status
-    ILI9341Display - an an LED that can display multiple lines of status/graphs
-    SSD1306Display - an OLED that can display multiple lines of status/graphs
+    ILI9341Display - an hi res color LED that can display status/graphics
+    SSD1306Display - an low res mono OLED that can display status/graphs
     MAX7219Display - an LED matrix that can display status/graphs
     LogDisplay - adheres to BasicDisplay interface and outputs to a logger
     PrintDisplay - adheres to BasicDisplay interface and outputs to console
     DummyDisplay - adheres to BasicDisplay interface with noop or console out
     SensorLog - writes data to file for later analysis
+    System - a utility class with static methods for fetching system stats
     Sensor - an abstraction for sensors
     ADS1115 - analog to digital converter
 
@@ -770,7 +772,7 @@ class SensorLog():
         """ Clean up the file resources. """
         self.file.close
 
-class System:
+class System():
     """
     An encapsulation of a system with static methods for reading its 
     current state and attributes.
