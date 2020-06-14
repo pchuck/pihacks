@@ -43,7 +43,7 @@ def sense_fifo(w, v, l):
         l.append(v)
     return l
 
-def update(sl, sensor, sconfig, l, width, lcd, leds, ntfrs, interval, lb):
+def update(sl, sensor, sconfig, l, width, lcd, leds, notifiers, interval, lb):
     """ Generic display and status light update routine, with graphical trace.
 
         :param sl: the sensor log.
@@ -53,7 +53,7 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, ntfrs, interval, lb):
         :param width: the size of the fifo (aka width of the trace display).
         :param lcd: the lcd device.
         :param leds: the status leds.
-        :param ntfrs: the notifier object
+        :param notifiers: notifiers for the sensors
         :param interval: the update interval in seconds.
         :param lb: the line-break character (or '', for single-line display)
     """
@@ -85,12 +85,11 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, ntfrs, interval, lb):
                             ' %s' % sconfig['units'][px], trace=l)
                 # update the status leds, buzzers and notifier
                 if(sensor is not None and
-                   sensor.thresholds is not None
-                   and name in ntfrs):
-                    ts = [t * sensor.baseline[px]
-                          for t in sensor.thresholds][:2]
-                    leds.light_threshold(v[px], *ts)
-                    ntfrs[sensor.name].test_threshold(v[px])
+                   sensor.thresholds is not None and
+                   sensor.name in notifiers):
+                    ts = [t * sensor.baseline[px] for t in sensor.thresholds]
+                    leds.light_threshold(v[px], *ts[:2])
+                    notifiers[sensor.name].test_threshold(v[px])
         sleep(interval)
     leds.clear()
 
@@ -101,16 +100,18 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, ntfrs, interval, lb):
     
     return(l)
 
-def main(width, height, sl, lcd, leds, ntfrs, buzzer, sensors, sconfigs, interval, lb):
+def main(width, height, sl, lcd, leds, notifiers, buzzer,
+         sensors, sconfigs, interval, lb):
     """ Main control: generic display, status lights and graphical trace.
     """
     traces = [[] for x in range(len(sconfigs))]
     # continually update all configured sensors
     while(True):
         for i, sconfig in enumerate(sconfigs.values()):
-            sensor = sensors[sconfig['name']] if sconfig['name'] in sensors else None
+            name = sconfig['name']
+            sensor = sensors[name] if name in sensors else None
             traces[i] = update(sl, sensor, sconfig, traces[i], width,
-                               lcd, leds, ntfrs, interval, lb)
+                               lcd, leds, notifiers, interval, lb)
 
 
 if __name__ == '__main__':
@@ -239,22 +240,22 @@ if __name__ == '__main__':
             sconfigs = json.load(jsonfile)
 
         # sensors, notifiers
-        sensors, ntfrs = {}, {}
+        sensors, notifiers = {}, {}
         for key, sc in sconfigs.items():
             px = sc['preferred_index'] if('preferred_index' in sc) else 0
             try:
                 sensor = umr.Sensor(args.sensor_info, key)
                 sensors[key] = sensor
                 if('notify' in sc):
-                    ntfrs[sensor.name] = umr.Notifier(sensor, px,
+                    notifiers[sensor.name] = umr.Notifier(sensor, px,
                         sc['buzz'] if 'buzz' in sc else None,
                         sc['notify'],
                         buzzer=buzzer)
             except ValueError:
                 pass
 
-        main(width, height, sl, lcd, leds, ntfrs, buzzer, sensors, sconfigs,
-             interval, lb)
+        main(width, height, sl, lcd, leds, notifiers, buzzer,
+             sensors, sconfigs, interval, lb)
     except KeyboardInterrupt:
         leds.clear()
         lcd.destroy()
