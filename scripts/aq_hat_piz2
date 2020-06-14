@@ -2,12 +2,13 @@
 #
 # air quality sensor startup script for host piz
 #
-# on piz2, sensor is mq9. green (26), yellow (13) and red (16) are connected.
-# also dht (4) and buzzer (25).
+# on piz2, AQ sensor MQ9, DHT11 and buzzer with 
+# status leds green (26), yellow (13) and red (16).
 #
 $PIHOME/python/aq_hat.py \
     --sensor-info=$PIHOME/config/sensor_info.json \
     --display=ssd1306 --width=128 --height=64 \
     --sensor mq9 --adc-addr 0x48 \
-    --buzzer-type=passive \
-    --led-brightness=10 4 12 26 13 16 25
+    --buzzer-type=passive --buzzer-pin=25 \
+    --dht11-pin=4 \
+    --led-brightness=10 12 26 13 16 

@@ -20,7 +20,6 @@ import time
 import board
 import busio
 from pushover import Client
-from datetime import datetime
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 import ultrametrics_rpi as umr
@@ -35,10 +34,13 @@ ADR_BITS=16
 # ADS1115 addresses (specify via --adc-addr)
 #   addr @ 0v - 0x48, @ 5v - 0x49
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='aq hat',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+    parser.add_argument('--log-interval', type=int, default=5,
+                        help='The interval in seconds between log writes')
     parser.add_argument('--sensor-info', type=str, 
                         help='The file to read sensor info from')
     parser.add_argument('--display', type=str, default='dummy',
@@ -55,8 +57,10 @@ if __name__ == '__main__':
     parser.add_argument('--buzzer-type', type=str, default='passive',
                         choices=['active', 'passive', 'none'],
                         help='The type of buzzer.')
-    parser.add_argument('d', type=int,
-                        help='The data pin of the dht11. -1 if none attached.')
+    parser.add_argument('--buzzer-pin', type=int,
+                        help='The signal pin to the buzzer')
+    parser.add_argument('--dht11-pin', type=int, default=-1,
+                        help='The data pin of the dht11 in BCM. -1 if none.')
     parser.add_argument('--led-brightness', type=int, default=100,
                         help='The brightness of the status leds.')
     parser.add_argument('b', type=int,
@@ -67,8 +71,6 @@ if __name__ == '__main__':
                         help='The signal pin to the third status led')
     parser.add_argument('r', type=int,
                         help='The signal pin to the last status led')
-    parser.add_argument('z', type=int,
-                        help='The signal pin to the buzzer')
 
     args = parser.parse_args()
     host = umr.System.get_hostname()
@@ -86,13 +88,16 @@ if __name__ == '__main__':
     else:
         leds = umr.StatusLedsPwm(colorpins, args.led_brightness)
 
-    if(args.d != -1):
-        dht = umr.DHT11(args.d)
+    if(args.dht11_pin != -1):
+        dht = umr.DHT11(args.dht11_pin)
 
     if(args.buzzer_type == 'passive'):
-        buzzer = umr.PassiveBuzzer(args.z)
+        buzzer = umr.PassiveBuzzer(args.buzzer_pin)
+    elif(args.buzzer_type == 'active'):
+        buzzer = umr.ActiveBuzzer(args.buzzer_pin)
     else:
-        buzzer = umr.ActiveBuzzer(args.z)
+        buzzer = umr.DummyBuzzer()
+
     buzzer.stop()
     logging.info("buzzer test (0.1s)..")
     leds.clear_all(); leds.light('red')
@@ -124,20 +129,27 @@ if __name__ == '__main__':
     sl = umr.SensorLog(LOG_PREFIX + "_" + sensor.name + ".out")
 
     values = []
+    i = 0
     try:
         lcd.display('initializing.. ')
         #sl.write('datetime, type, raw, voltage') # don't rewrite the header
         while True:
-            if(args.d != -1):
-                (tc, tf, h, p) = dht.sense_data() # read dht sensor
-                if(tf is not None): sl.write('ambient', tf, vformat='%.1f')
-                if(h is not None): sl.write('humidity', h, vformat='%.1f')
-                
-            r, v = adc.value, adc.voltage # read aq sensor
-            if(len(values) > args.width): values.pop(0) # update trace
+            # read dht sensor and log
+            if(args.dht11_pin != -1):
+                (tc, tf, h, p) = dht.sense_data() 
+                if(i % args.log_interval == 0):
+                    if(tf is not None): sl.write('ambient', tf, vformat='%.1f')
+                    if(h is not None): sl.write('humidity', h, vformat='%.1f')
+
+            # read aq sensor and log
+            r, v = adc.value, adc.voltage 
+            if(i % args.log_interval == 0):
+                sl.write_message('%s, %d, %f' % (sensor.name.upper(), r, v))
+
+            # update graphical trace buffer
+            if(len(values) > args.width): values.pop(0)
             values.append(r)
-            sl.write_message('%s, %d, %f' % (sensor.name.upper(), r, v))
-            
+
             # calculate a relative percentage of air-quality, for display
             v_rel = -v * 100.0 / sensor.baseline_v + 100.0
             if(args.height == 32): # two line display
@@ -153,7 +165,10 @@ if __name__ == '__main__':
             t2 = sensor.thresholds[1] * sensor.baseline_v
             leds.clear_all(); leds.light_threshold(v, t1, t2)
             notifier.test_threshold(v)
+
+            # wait and iterate
             time.sleep(1)
+            i += 1
 
     except KeyboardInterrupt:
         leds.clear_all()
