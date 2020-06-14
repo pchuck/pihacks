@@ -88,24 +88,24 @@ if __name__ == '__main__':
     else:
         leds = umr.StatusLedsPwm(colorpins, args.led_brightness)
 
+    # DHT sensor
     if(args.dht11_pin != -1):
         dht = umr.DHT11(args.dht11_pin)
+        logging.info('DHT on pin %d' % args.dht11_pin)
 
+    # buzzer
     if(args.buzzer_type == 'passive'):
         buzzer = umr.PassiveBuzzer(args.buzzer_pin)
     elif(args.buzzer_type == 'active'):
         buzzer = umr.ActiveBuzzer(args.buzzer_pin)
     else:
         buzzer = umr.DummyBuzzer()
-
-    buzzer.stop()
-    logging.info("buzzer test (0.1s)..")
+    logging.info(str(type(buzzer)) + ": test (0.1s)")
     leds.clear_all(); leds.light('red')
-    buzzer.start(); time.sleep(0.1)
-    logging.info("stop")
-    buzzer.stop()
+    buzzer.start(); time.sleep(0.1); buzzer.stop()
     leds.clear_all(); leds.light('green')
 
+    # display
     display_type = args.display.lower()
     if(display_type == 'lcd1602'):
         lcd = umr.LCD1602Display(echo=False)
@@ -116,8 +116,12 @@ if __name__ == '__main__':
     else:
         lcd = umr.DummyDisplay()
 
-    # create the i2c bus and adc object
+    # create the sensor
     sensor = umr.Sensor(args.sensor_info, args.sensor)
+    logging.info('sensor: ' + sensor.name)
+    logging.info('warn/alert/alarm thresholds: ' + str(sensor.thresholds))
+
+    # create the i2c bus and adc object
     i2c = busio.I2C(board.SCL, board.SDA)
     ads = ADS.ADS1115(i2c, address=int(args.adc_addr, 16))
     adc = AnalogIn(ads, ADS.P0)
