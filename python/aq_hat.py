@@ -84,7 +84,6 @@ if __name__ == '__main__':
         dht = umr.DHT11(args.d)
     
     leds = umr.StatusLeds(colorpins)
-    leds.light('green')
 
     if(args.buzzer_type == 'passive'):
         buzzer = umr.PassiveBuzzer(args.z)
@@ -148,10 +147,9 @@ if __name__ == '__main__':
             v_baseline = sensor.baseline[1]
             t1 = sensor.thresholds[0] * sensor.baseline_v
             t2 = sensor.thresholds[1] * sensor.baseline_v
-            leds.light_threshold(v, t1, t2)
+            leds.clear(); leds.light_threshold(v, t1, t2)
             notifier.test_threshold(v)
             time.sleep(1)
-            leds.clear()
 
     except KeyboardInterrupt:
         leds.clear()
