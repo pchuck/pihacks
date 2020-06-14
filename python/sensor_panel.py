@@ -71,13 +71,13 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, notifiers, interval, lb):
         except Exception as e:
         # if a value can't be retrieved, light led, set value 'None' & continue
             v = [None]
-            leds.clear(); leds.light('red')
+            leds.clear_all(); leds.light('red')
             logging.error('Exception: ' + str(e))
         # if the 'display' is configured, update the display device..
         if(sconfig['display']):
             # short-circuit complex logic and display 'None' if no value
             if(None in v):
-                leds.clear(); leds.light('red')
+                leds.clear_all(); leds.light('red')
                 lcd.display(name + (':%sNone' % lb), trace=None)
             else:
                 # display the result from the 'preferred' function
@@ -87,7 +87,7 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, notifiers, interval, lb):
                 # update the status leds, buzzers and notifier
                 if(sensor is not None and sensor.thresholds is not None):
                     ts = [t * sensor.baseline[px] for t in sensor.thresholds]
-                    leds.clear(); leds.light_threshold(v[px], *ts[:2])
+                    leds.clear_all(); leds.light_threshold(v[px], *ts[:2])
                     if(sensor.name in notifiers):
                         notifiers[sensor.name].test_threshold(v[px])
         sleep(interval)
@@ -153,6 +153,8 @@ if __name__ == '__main__':
         help='The type of buzzer.')
     parser.add_argument('--buzzer-pin', type=int,
         help='The control pin for the buzzer.')
+    parser.add_argument('--led-brightness', type=int, default=100, 
+        help='The brightness of the status leds.')
     parser.add_argument('b', type=int, 
         help='The signal pin to the first status led in BCM')
     parser.add_argument('g', type=int, 
@@ -176,7 +178,10 @@ if __name__ == '__main__':
     # status_leds() expects the pins to be in order of increasing 'severity'
     colorpins = { 'blue': args.b, 'green': args.g,
                   'yellow': args.y, 'red': args.r }
-    leds = umr.StatusLeds(colorpins)
+    if(args.led_brightness == 100):
+        leds = umr.StatusLeds(colorpins)
+    else:
+        leds = umr.StatusLedsPwm(colorpins, args.led_brightness)
 
     # display
     width, height, rotate = args.width, args.height, args.rotate
@@ -256,7 +261,7 @@ if __name__ == '__main__':
         main(width, height, sl, lcd, leds, notifiers, buzzer,
              sensors, sconfigs, interval, lb)
     except KeyboardInterrupt:
-        leds.clear()
+        leds.clear_all()
         lcd.destroy()
         leds.destroy()
         buzzer.destroy()

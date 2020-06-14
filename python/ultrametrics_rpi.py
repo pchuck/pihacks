@@ -28,6 +28,7 @@ from datetime import datetime
     ActiveBuzzer - an active buzzer component, with start() and stop()
     DummyBuzzer - a buzzer that doesn't make any sound.
     StatusLeds - status lights controlled individually or by threshold
+    StatusLedsPwm - status lights, pwm version with brightness control
     DHT11 - a temperature and humidity sensor
     BME280 - a temperature, humidity and pressure sensor
     BasicDisplay - basic interface for displaying status text and graphs
@@ -239,7 +240,7 @@ class StatusLeds():
         elif(v >= t2):
             self.GPIO.output(self.colorpins.get('red'), self.GPIO.HIGH)
 
-    def clear(self):
+    def clear_all(self):
         """ Clear all leds. """
         self.GPIO.output(list(self.colorpins.values()), self.GPIO.LOW)
 
@@ -252,7 +253,7 @@ class StatusLedsPwm():
         Order the lights by 'severity', e.g. red, ylw, grn, blu.
         Uses PWM to control brightness.
     """
-    def __init__(self, colorpins):
+    def __init__(self, colorpins, brightness=100):
         """
         :param colorpins: The pin numbers (in BCM) of the leds.
         :type colorpins: list
@@ -260,6 +261,7 @@ class StatusLedsPwm():
         import RPi.GPIO as GPIO
         self.GPIO = GPIO
         self.colorpins = colorpins
+        self.default_brightness = brightness
         self.colors, self.pins = colorpins.keys(), colorpins.values()
         self.pwms = {}
         self.GPIO.setmode(GPIO.BCM)
@@ -270,20 +272,23 @@ class StatusLedsPwm():
             self.GPIO.setup(pin, self.GPIO.OUT)
             logging.info('led pin %d - %s ' % (pin, color))
             self.pwms[color] = self.GPIO.PWM(pin, 1000)
-            self.pwms[color].start(10)
+            self.pwms[color].start(brightness)
             sleep(0.2)
         self.clear_all()
+        self.light('green')
 
-    def light(self, color, brightness=100):
+    def light(self, color, brightness=None):
         """ Light the specified led.
         :param color: The pin number (in BCM) of the led to light
         :type color: int
         :param brightness: The brightness from 0 to 100.
         :type brightness: int
         """
+        if(brightness is None):
+            brightness = self.default_brightness
         self.pwms[color].ChangeDutyCycle(brightness)
 
-    def light_threshold(self, v, t1, t2, brightness=100):
+    def light_threshold(self, v, t1, t2, brightness=None):
         """ Light leds based on a value compared to thresholds. 
         Assumes 3 lights and 2 thresholds.
 
@@ -294,6 +299,8 @@ class StatusLedsPwm():
         :param t2: The upper threshold.
         :type t2: int
         """
+        if(brightness is None):
+            brightness = self.default_brightness
         if(v < t1):
             self.pwms['green'].ChangeDutyCycle(brightness)
         elif(v >= t1 and v < t2):

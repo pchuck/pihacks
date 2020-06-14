@@ -57,6 +57,8 @@ if __name__ == '__main__':
                         help='The type of buzzer.')
     parser.add_argument('d', type=int,
                         help='The data pin of the dht11. -1 if none attached.')
+    parser.add_argument('--led-brightness', type=int, default=100,
+                        help='The brightness of the status leds.')
     parser.add_argument('b', type=int,
                         help='The signal pin to the first status led')
     parser.add_argument('g', type=int,
@@ -79,11 +81,13 @@ if __name__ == '__main__':
         'yellow': args.y,
         'red': args.r
     }
+    if(args.led_brightness == 100):
+        leds = umr.StatusLeds(colorpins)
+    else:
+        leds = umr.StatusLedsPwm(colorpins, args.led_brightness)
 
     if(args.d != -1):
         dht = umr.DHT11(args.d)
-    
-    leds = umr.StatusLeds(colorpins)
 
     if(args.buzzer_type == 'passive'):
         buzzer = umr.PassiveBuzzer(args.z)
@@ -91,11 +95,11 @@ if __name__ == '__main__':
         buzzer = umr.ActiveBuzzer(args.z)
     buzzer.stop()
     logging.info("buzzer test (0.1s)..")
-    leds.clear(); leds.light('red')
+    leds.clear_all(); leds.light('red')
     buzzer.start(); time.sleep(0.1)
     logging.info("stop")
     buzzer.stop()
-    leds.clear(); leds.light('green')
+    leds.clear_all(); leds.light('green')
 
     display_type = args.display.lower()
     if(display_type == 'lcd1602'):
@@ -147,10 +151,10 @@ if __name__ == '__main__':
             v_baseline = sensor.baseline[1]
             t1 = sensor.thresholds[0] * sensor.baseline_v
             t2 = sensor.thresholds[1] * sensor.baseline_v
-            leds.clear(); leds.light_threshold(v, t1, t2)
+            leds.clear_all(); leds.light_threshold(v, t1, t2)
             notifier.test_threshold(v)
             time.sleep(1)
 
     except KeyboardInterrupt:
-        leds.clear()
+        leds.clear_all()
         lcd.destroy()

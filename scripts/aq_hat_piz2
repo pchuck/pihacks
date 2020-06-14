@@ -9,4 +9,5 @@ $PIHOME/python/aq_hat.py \
     --sensor-info=$PIHOME/config/sensor_info.json \
     --display=ssd1306 --width=128 --height=64 \
     --sensor mq9 --adc-addr 0x48 \
-    --buzzer-type=passive 4 12 26 13 16 25
+    --buzzer-type=passive \
+    --led-brightness=10 4 12 26 13 16 25
