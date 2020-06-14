@@ -212,6 +212,7 @@ class StatusLeds():
             self.GPIO.output(pin, self.GPIO.HIGH)
             sleep(0.2)
             self.GPIO.output(pin, self.GPIO.LOW)
+        self.light('green')
 
     def light(self, color):
         """ Light the specified led.

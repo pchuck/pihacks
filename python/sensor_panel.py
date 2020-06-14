@@ -71,12 +71,13 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, notifiers, interval, lb):
         except Exception as e:
         # if a value can't be retrieved, light led, set value 'None' & continue
             v = [None]
-            leds.light('red')
+            leds.clear(); leds.light('red')
             logging.error('Exception: ' + str(e))
         # if the 'display' is configured, update the display device..
         if(sconfig['display']):
             # short-circuit complex logic and display 'None' if no value
             if(None in v):
+                leds.clear(); leds.light('red')
                 lcd.display(name + (':%sNone' % lb), trace=None)
             else:
                 # display the result from the 'preferred' function
@@ -84,14 +85,12 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, notifiers, interval, lb):
                             sconfig['formats'][px] % v[px] +
                             ' %s' % sconfig['units'][px], trace=l)
                 # update the status leds, buzzers and notifier
-                if(sensor is not None and
-                   sensor.thresholds is not None and
-                   sensor.name in notifiers):
+                if(sensor is not None and sensor.thresholds is not None):
                     ts = [t * sensor.baseline[px] for t in sensor.thresholds]
-                    leds.light_threshold(v[px], *ts[:2])
-                    notifiers[sensor.name].test_threshold(v[px])
+                    leds.clear(); leds.light_threshold(v[px], *ts[:2])
+                    if(sensor.name in notifiers):
+                        notifiers[sensor.name].test_threshold(v[px])
         sleep(interval)
-    leds.clear()
 
     # log all values
     if('log' in sconfig and sconfig['log'] and
