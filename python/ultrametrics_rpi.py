@@ -891,10 +891,12 @@ class Sensor():
         :type sensor_type: str
         """
         with open(sensor_file) as jsonfile:
-            self.sensor = json.load(jsonfile)
+            self.sensors = json.load(jsonfile)
 
         self.key = Sensor.fix_name(sensor_type)
-        self.sensor = self.sensor[self.key]
+        if(not self.key in self.sensors):
+            raise ValueError("No config data exists for: " + sensor_type)
+        self.sensor = self.sensors[self.key]
         self.name = self.sensor['name']
         self.short = self.sensor['short']
         self.description = self.sensor['long']
