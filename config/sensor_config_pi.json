@@ -41,6 +41,26 @@
 	"units": [""],
 	"repeat": 1
     },
+    "cpu": {
+        "name": "cpu",
+        "leds": true,
+        "display": true,
+        "log": true,
+        "funcs": ["umr.System.get_cpu_temp()"],
+        "formats": ["%.2f"],
+        "units": ["C"],
+        "repeat": 3
+    },
+    "gpu": {
+        "name": "gpu",
+        "leds": true,
+        "display": true,
+        "log": true,
+        "funcs": ["umr.System.get_gpu_temp()"],
+        "formats": ["%.2f"],
+        "units": ["C"],
+        "repeat": 3
+    },
     "ambient": {
 	"name": "ambient",
 	"leds": true,
