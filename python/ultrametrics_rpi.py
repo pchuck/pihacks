@@ -4,7 +4,7 @@
 #   pip3 install luma.core
 #   pip3 install luma.oled # for ssd1306
 #   sudo apt-get install libgpiod2
-#   pip3 install adafruit-circuitpython-dht # for DHT11
+#   pip3 install adafruit-circuitpython-dht # for DHT11 or 22
 #   pip3 install adafruit-circuitpython-bme280 # for BME/BMP280
 #   pip3 install adafruit-circuitpython-ads1x15
 #
@@ -30,7 +30,7 @@ from datetime import datetime
     Notifier - a controller for sending text notifications on thresholds
     StatusLeds - status lights controlled individually or by threshold
     StatusLedsPwm - status lights, pwm version with brightness control
-    DHT11 - a temperature and humidity sensor
+    DHT - a DHT11 or DHT22 temperature and humidity sensor
     BME280 - a temperature, humidity and pressure sensor
     BasicDisplay - basic interface for displaying status text and graphs
     LCD1602Display - an LCD that can display two lines of status
@@ -325,26 +325,29 @@ class StatusLedsPwm():
     def destroy(self):
         self.GPIO.cleanup()
 
-class DHT11():
+class DHT():
     """ dht11 temperature and humidity sensor wrapper
     .. note:: requires adafruit-circuitpython-dht, not Adafruit_DHT,
               also libgpiod2
     """
-    def __init__(self, pin):
+    def __init__(self, pin, type='11'):
         """
         :param pin: The pin number (in BCM) of the DHT data line.
         :type pin: int
         """
         import adafruit_dht
-        self.dht = adafruit_dht.DHT11(pin)
+        if(type == '11'):
+            self.dht = adafruit_dht.DHT11(pin)
+        else:
+            self.dht = adafruit_dht.DHT22(pin)
 
     def sense_data(self):
-        """ Read the temperature and humidity from the DHT11 sensor.
+        """ Read the temperature and humidity from the DHT sensor.
         .. note:: RuntimeError is handled internally. DT11 read often fails.
 
         :return: the temperature in celsius, farenheit and the humidity.
         :rtype: (int, int, int)
-        :raises: RuntimeError: when the DHT11 read fails
+        :raises: RuntimeError: when the DHT read fails
         """
         try:
             temperature_c = self.dht.temperature
@@ -358,38 +361,18 @@ class DHT11():
         return(temperature_c, temperature_f, humidity, None)
     
     def sense_temperature(self):
-        """ Read the temperature from the DHT11 sensor.
-        .. note:: RuntimeError is handled internally. DT11 read often fails.
-
+        """ Read the temperature from the DHT sensor.
         :return: the temperature in farenheit
         :rtype: float
-        :raises: RuntimeError: when the DHT11 read fails
         """
-        try:
-            temperature_c = self.dht.temperature
-            if(temperature_c is None): temperature_f = None
-            else: temperature_f = temperature_c * (9 / 5) + 32
-        except RuntimeError:
-            # dht doesn't always succeed. continue.
-            return(None)
-
-        return(temperature_f)
+        return self.sense_data()[1]
 
     def sense_humidity(self):
-        """ Read the humidity from the DHT11 sensor.
-        .. note:: RuntimeError is handled internally. DT11 read often fails.
-
+        """ Read the humidity from the DHT sensor.
         :return: the humidity.
         :rtype: float
-        :raises: RuntimeError: when the DHT11 read fails
         """
-        try:
-            humidity = self.dht.humidity
-        except RuntimeError:
-            # dht doesn't always succeed. continue.
-            return(None)
-
-        return(humidity)
+        return self.sense_data()[2]
 
 class BME280():
     """ BME/BMP280 temperature and humidity sensor wrapper
@@ -427,38 +410,21 @@ class BME280():
         :return: the temperature farenheit.
         :rtype: float
         """
-        try:
-            temperature_c = self.bme280.temperature
-            if(temperature_c is None): temperature_f = None
-            else: temperature_f = temperature_c * (9 / 5) + 32
-        except RuntimeError:
-            return None
-
-        return(temperature_f)
+        return self.sense_data()[1]
 
     def sense_humidity(self):
         """ Read the humidity.
         :return: the humidity.
         :rtype: float
         """
-        try:
-            return self.bme280.humidity
-        except RuntimeError:
-            return None
-
-        return(humidity)
+        return self.sense_data()[2]
 
     def sense_pressure(self):
         """ Read the pressure.
         :return: the pressure.
         :rtype: float
         """
-        try:
-            return self.bme280.pressure
-        except RuntimeError:
-            return None
-
-        return(pressure)
+        return self.sense_data()[3]
 
 class BasicDisplay():
     """ an informal interface for displaying textual data on a display device

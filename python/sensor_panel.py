@@ -144,8 +144,11 @@ if __name__ == '__main__':
         help='The line-break character. Tiny display override')
     parser.add_argument('--adc-addr', type=str, 
         help='Hex I2C address of the a/d converter, e.g. 0x48')
-    parser.add_argument('--dht11', type=int, 
-        help='The data pin of the dht11 in BCM')
+    parser.add_argument('--dht-type', type=str, default='11',
+        choices=['11', '22'],
+        help='The type of DHT sensor.')
+    parser.add_argument('--dht-pin', type=int, 
+        help='The data pin of the dht device in BCM')
     parser.add_argument('--bme280-addr', type=str, 
         help='Hex I2C address of the bme280. e.g. 0x76')
     parser.add_argument('--buzzer-type', type=str, 
@@ -228,12 +231,16 @@ if __name__ == '__main__':
     if(args.adc_addr is not None):
         ads = umr.ADS1115(args.adc_addr)
     
-    # DHT11 or BME280, if attached
+    # DHT11, DHT22 or BME280, if attached
     # note: tsense is used dynamically, if referenced sensor_config*.json
-    if(args.dht11 is not None):
-        tsense = umr.DHT11(args.dht11)
+    if(args.dht_pin is not None):
+        tsense = umr.DHT(args.dht_pin, type=args.dht_type)
+        logging.info('DHT%s on pin %d' % (args.dht_type, args.dht_pin))
     elif(args.bme280_addr is not None):
         tsense = umr.BME280(int(args.bme280_addr, 16))
+        logging.info('BME280 on i2c address %s' % args.bme280_addr)
+    else:
+        logging.info('No temperature/humidity/pressure sensor.')
 
     # the sensor panel
     try:

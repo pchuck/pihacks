@@ -6,5 +6,7 @@
 $PIHOME/python/sensor_panel.py \
     --sensor-config=$PIHOME/config/sensor_config_pi.json \
     --sensor-info=$PIHOME/config/sensor_info.json \
-    --display=lcd1602 --dht11=4 \
-    --led-brightness=10 22 24 23 27
+    --display=lcd1602 \
+    --dht-type=11 --dht-pin=4 \
+    --led-brightness=100 22 24 23 27
+# disable pwm w/ led-brightness=100. interferes with DHT11(?) 

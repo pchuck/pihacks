@@ -10,5 +10,5 @@ $PIHOME/python/aq_hat.py \
     --display=ssd1306 --width=128 --height=32 \
     --sensor mq5 --adc-addr 0x48 \
     --buzzer-type=none --buzzer-pin=20 \
-    --dht11-pin=4 \
-    --led-brightness=2 12 13 16 26 
+    --dht-type=11 --dht-pin=4 \
+    --led-brightness=100 12 13 16 26 

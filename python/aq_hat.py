@@ -59,8 +59,11 @@ if __name__ == '__main__':
                         help='The type of buzzer.')
     parser.add_argument('--buzzer-pin', type=int,
                         help='The signal pin to the buzzer')
-    parser.add_argument('--dht11-pin', type=int, default=-1,
-                        help='The data pin of the dht11 in BCM. -1 if none.')
+    parser.add_argument('--dht-type', type=str, default='11',
+                        choices=['11', '22'],
+                        help='The type of DHT sensor.')
+    parser.add_argument('--dht-pin', type=int, default=-1,
+                        help='The data pin of the dht in BCM. -1 if none.')
     parser.add_argument('--led-brightness', type=int, default=100,
                         help='The brightness of the status leds.')
     parser.add_argument('b', type=int,
@@ -89,9 +92,9 @@ if __name__ == '__main__':
         leds = umr.StatusLedsPwm(colorpins, args.led_brightness)
 
     # DHT sensor
-    if(args.dht11_pin != -1):
-        dht = umr.DHT11(args.dht11_pin)
-        logging.info('DHT on pin %d' % args.dht11_pin)
+    if(args.dht_pin != -1):
+        dht = umr.DHT(args.dht_pin, type=args.dht_type)
+        logging.info('DHT%s on pin %d' % (args.dht_type, args.dht_pin))
 
     # buzzer
     if(args.buzzer_type == 'passive'):
@@ -139,7 +142,7 @@ if __name__ == '__main__':
         #sl.write('datetime, type, raw, voltage') # don't rewrite the header
         while True:
             # read dht sensor and log
-            if(args.dht11_pin != -1):
+            if(args.dht_pin != -1):
                 (tc, tf, h, p) = dht.sense_data() 
                 if(i % args.log_interval == 0):
                     if(tf is not None): sl.write('ambient', tf, vformat='%.1f')
