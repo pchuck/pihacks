@@ -123,7 +123,7 @@ if __name__ == '__main__':
     parser.add_argument('--sensor-info', type=str, 
         help='The file to read sensor info from')
     parser.add_argument('--display', type=str, default='dummy',
-        choices=['ssd1306', 'lcd1602', 'ili9341', 'max7219', 'dummy'],
+        choices=['ssd1306', 'lcd1602', 'ili9341', 'max7219', 'sevenseg', 'dummy'],
         help='The type of device for displaying info messages')
     parser.add_argument('--rotate', type=int, default=0,
         choices=[0, 1, 2, 3],
@@ -218,6 +218,8 @@ if __name__ == '__main__':
                                  trace_height=tr_h,
                                  font=font,
                                  echo=False)
+    elif(display_type =='sevenseg'):
+        lcd = umr.MAX7219SevenSegDisplay()
     else:
         lcd = umr.DummyDisplay()
 
@@ -246,7 +248,7 @@ if __name__ == '__main__':
     try:
         interval = args.interval
         lb = args.line_break
-        lcd.display('running.. ')
+        lcd.display('running..')
         with open(args.sensor_config) as jsonfile:
             sconfigs = json.load(jsonfile)
 

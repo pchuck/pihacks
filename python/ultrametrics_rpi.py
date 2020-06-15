@@ -541,6 +541,95 @@ class LCD1602Display(BasicDisplay):
         self.mcp.output(3, 0)
         self.lcd.clear()
 
+class MAX7219SevenSegDisplay(BasicDisplay):
+    """ implementation for displaying textual data on a display device
+    """
+    def __init__(self, brightness=16, echo=False):
+        """
+        :param echo: Whether or not to echo writes to the logger.
+        :type echo: bool
+        """
+        from luma.core.interface.serial import spi, noop
+        from luma.core.virtual import viewport, sevensegment
+        self.viewport = viewport
+        self.sevensegment = sevensegment
+        from luma.led_matrix.device import max7219
+        
+        self.echo = echo
+        logging.info('looking for seven-segment on SPI bus')
+        try:
+            self.serial = spi(port=0, device=0, gpio=noop())
+            self.device = max7219(self.serial, cascaded=1)
+            self.seg = self.sevensegment(self.device)
+            self.seg.device.contrast(brightness)
+            logging.info('found display!')
+        except:
+            logging.error('SPI error')
+
+        self.seg.text = 'init...'
+        
+    def _show_message_vp(self, msg, delay=0.1):
+        """ virtual viewport """
+        width = self.device.width
+        padding = " " * width
+        msg = padding + msg + padding
+        n = len(msg)
+
+        virtual = self.viewport(self.device, width=n, height=8)
+        self.sevensegment(virtual).text = msg
+        for i in reversed(list(range(n - width))):
+            virtual.set_position((i, 0))
+            sleep(delay)
+
+    def clear(self):
+        """ Clear the display. """
+        pass
+
+    def _shorten(self, message):
+        """ a hack to compact different metrics to fit in 8 characters """
+        message = message.strip(' \n')
+        message = message.replace(' ', '')
+        if(':' in message):
+            metric = message.split(':')[0]
+            body = message.split(':', 1)[1]
+            if(metric == 'cpu' or metric == 'gpu' or metric == 'load'):
+                return message.replace('C', '')
+            if(metric == 'uptime'):
+                return body[:-3]
+            if(metric == 'ip'):
+                return body
+            return body
+        else:
+            return message
+
+    def display(self, message, trace=None):
+        """ Display a message.
+
+        :param message: The message to display on the device.
+        :type message: str
+        :param trace: Ignored. sevensegs can't display graphical traces.
+        :type trace: bool
+        """
+        # shorten messages for display on seven segment
+        message = self._shorten(message)
+        # right-justify
+        if('..' not in message): 
+            message = message.rjust(self.seg.device.width +
+                                    message.count('.'), ' ')
+        # scroll if too wide (.'s don't count!)
+        if(len(message.replace('.', '')) > self.seg.device.width):
+            self._show_message_vp(message)
+        # display if narrow enough
+        else:
+            self.seg.text = message
+            
+        if(self.echo):
+            logging.info(message)
+
+    def destroy(self):
+        """ Clean up the display. """
+        pass
+
 class LumaDisplay(BasicDisplay):
     """ implementation for displaying text/graphics on a device supported 
         by the luma project
