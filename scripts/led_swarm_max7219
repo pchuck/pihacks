@@ -4,4 +4,4 @@
 #
 # Use higher x than y peak velocity, and 12 animated cells.
 #
-$PIHOME/python/led_swarm_luma.py --device=max7219 --cascaded=4 --block-orientation=90 --reverse-order=True --intensity=1 -mvx 2 -mvy 1 --delay=0.1 32 8 12
+$PIHOME/python/led_swarm_luma.py --device=max7219 --device-id=0 --cascaded=4 --block-orientation=90 --reverse-order=True --intensity=1 -mvx 2 -mvy 1 --delay=0.1 32 8 12

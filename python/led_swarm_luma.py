@@ -90,13 +90,14 @@ class FireflyRendererLed_Luma(object):
 #
 # initialize and return the new device handle
 #
-def init_device(device, n, block_orientation, rotate, inreverse, intensity):
+def init_device(device, device_id,
+                n, block_orientation, rotate, inreverse, intensity):
     # max7219, via SPI
     if(device.lower() == 'max7219'):
         from luma.core.interface.serial import spi, noop
         from luma.led_matrix.device import max7219 as led
         
-        serial = spi(port=0, device=0, gpio=noop())
+        serial = spi(port=0, device=device_id, gpio=noop())
         device = led(serial, cascaded=n, block_orientation=block_orientation,
                      rotate=rotate, blocks_arranged_in_reverse_order=inreverse)
         device.contrast(intensity)
@@ -105,7 +106,7 @@ def init_device(device, n, block_orientation, rotate, inreverse, intensity):
     elif(device.lower() == 'ili9341'):
         from luma.core.interface.serial import spi, noop
         from luma.lcd.device import ili9341 as lcd
-        serial = spi(port=0, device=0, gpio_DC=23, gpio_RST=24,
+        serial = spi(port=0, device=device_id, gpio_DC=23, gpio_RST=24,
                      bus_speed_hz=32000000)
         device = lcd(serial, gpio_LIGHT=25, active_low=False)
         # , pwm_frequency=50) # this appears to be broken
@@ -148,6 +149,8 @@ if __name__ == "__main__":
     parser.add_argument('--device', '-dv', type=str, default='max7219',
         choices=['max7219', 'ssd1306', 'ili9341'],
         help='The type of device')
+    parser.add_argument('--device-id', '-di', type=int, default=0,
+        help='The SPI device id (e.g. CE0, CE1) to address.')
     parser.add_argument('--cascaded', '-n', type=int, default=1,
         help='Number of cascaded LED matrices (usu. max7219)')
     parser.add_argument('--block-orientation', '-bo', type=int, default=0,
@@ -182,7 +185,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        device = init_device(args.device, args.cascaded, args.block_orientation,
+        device = init_device(args.device, args.device_id,
+                             args.cascaded, args.block_orientation,
                              args.rotate, args.reverse_order, args.intensity)
 
         swarm(device, 
