@@ -141,6 +141,9 @@ if __name__ == '__main__':
         lcd.display('initializing.. ')
         #sl.write('datetime, type, raw, voltage') # don't rewrite the header
         while True:
+            # stop the buzzer before reading the dht/adc. interferes w/ read
+            buzzer.stop()
+
             # read dht sensor and log
             if(args.dht_pin != -1):
                 (tc, tf, h, p) = dht.sense_data() 
@@ -149,29 +152,33 @@ if __name__ == '__main__':
                     if(h is not None): sl.write('humidity', h, vformat='%.1f')
 
             # read aq sensor and log
-            r, v = adc.value, adc.voltage 
-            if(i % args.log_interval == 0):
-                sl.write_message('%s, %d, %f' % (sensor.name.upper(), r, v))
+            try:
+                r, v = adc.value, adc.voltage 
+                if(i % args.log_interval == 0):
+                    sl.write_message('%s, %d, %f' %
+                                     (sensor.name.upper(), r, v))
 
-            # update graphical trace buffer
-            if(len(values) > args.width): values.pop(0)
-            values.append(r)
+                # update graphical trace buffer
+                if(len(values) > args.width): values.pop(0)
+                values.append(r)
 
-            # calculate a relative percentage of air-quality, for display
-            v_rel = -v * 100.0 / sensor.baseline_v + 100.0
-            if(args.height == 32): # two line display
-                lcd.display('AQ=%+.2f%% (%.3fv)' %
+                # calculate a relative percentage of air-quality, for display
+                v_rel = -v * 100.0 / sensor.baseline_v + 100.0
+                if(args.height == 32): # two line display
+                    lcd.display('AQ=%+.2f%% (%.3fv)' %
                                 (v_rel, v), values)
-            else: # 4 line text display
-                lcd.display('AQ=%+.2f%%\nv=%.4fv/5v\nr=%d/2^%d' %
+                else: # 4 line text display
+                    lcd.display('AQ=%+.2f%%\nv=%.4fv/5v\nr=%d/2^%d' %
                                 (v_rel, v, r, ADR_BITS), values)
 
-            # calculate thresholds, test and take action
-            v_baseline = sensor.baseline[1]
-            t1 = sensor.thresholds[0] * sensor.baseline_v
-            t2 = sensor.thresholds[1] * sensor.baseline_v
-            leds.clear_all(); leds.light_threshold(v, t1, t2)
-            notifier.test_threshold(v)
+                # calculate thresholds, test and take action
+                v_baseline = sensor.baseline[1]
+                t1 = sensor.thresholds[0] * sensor.baseline_v
+                t2 = sensor.thresholds[1] * sensor.baseline_v
+                leds.clear_all(); leds.light_threshold(v, t1, t2)
+                notifier.test_threshold(v)
+            except OSError:
+                logging.error('ADC Read failed!')
 
             # wait and iterate
             time.sleep(1)
