@@ -179,14 +179,14 @@ class Notifier():
             if(self.buzzer and self.buzz): self.buzzer.start()
             if(self.notify and not self.triggered):
                 self.client().send_message(
-                    "%s detected %.2f > %.2f!" % (self.gas, v, self.t3),
+                    "%s detected %.2f > %.2f!" % (self.short, v, self.t3),
                     title="%s: %s alarm" % (self.host, self.name))
                 self.triggered = True
 
         # clear any active alarms below t2
         if(v < self.t2 and self.notify and self.triggered):
             self.client().send_message(
-                "%s clearing. %.2f < %.2f)" % (self.gas, v, self.t2),
+                "%s clearing. %.2f < %.2f)" % (self.short, v, self.t2),
                 title="%s: %s" % (self.host, self.name))
             self.triggered = False
 

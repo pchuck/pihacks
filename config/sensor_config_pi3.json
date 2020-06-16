@@ -110,7 +110,7 @@
 	"repeat": 2
     },
     "mq135": {
-	"name": "MQ135",
+	"name": "mq135",
 	"leds": true,
 	"buzz": true,
 	"notify": true,
@@ -124,7 +124,7 @@
 	"repeat": 5
     },
     "mq7": {
-	"name": "MQ7",
+	"name": "mq7",
 	"leds": true,
 	"buzz": true,
 	"notify": true,
