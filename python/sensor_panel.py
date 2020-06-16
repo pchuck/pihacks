@@ -264,8 +264,9 @@ if __name__ == '__main__':
                         sc['buzz'] if 'buzz' in sc else None,
                         sc['notify'],
                         buzzer=buzzer)
-            except ValueError:
-                pass
+            except json.decoder.JSONDecodeError as e:
+                logging.error(e)
+                sys.exit(1)
 
         main(width, height, sl, lcd, leds, notifiers, buzzer,
              sensors, sconfigs, interval, lb)

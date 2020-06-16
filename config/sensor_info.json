@@ -36,7 +36,8 @@
 	"short": "CO",
 	"long": "carbon monoxide",
 	"baseline": [2948, 0.368635],
-	"thresholds": [1.1, 1.2, 1.3]
+	"thresholds": [1.3, 1.4, 1.5],
+	"thresholds_old": [1.15, 1.25, 1.35]
     },
     "mq8": {
 	"name": "mq8",
@@ -49,14 +50,15 @@
 	"short": "CO/CG",
 	"long": "carbon monoxide or combustibles",
 	"baseline": [1139, 0.142478],
-        "thresholds": [1.15, 1.25, 1.35]
+	"thresholds": [1.15, 1.25, 1.35]
     },
     "mq135": {
 	"name": "mq135",
 	"short": "CX/CO2",
 	"long": "contaminants, combustibles or CO2",
 	"baseline": [9713, 1.214233],
-	"thresholds": [1.3, 1.5, 1.7]
+	"thresholds": [1.3, 1.5, 1.7],
+	"thresholds_test": [1.25, 1.3, 1.35]
     },
     "board": {
 	"name": "board",
@@ -116,5 +118,25 @@
 	"long": "system load (1min)",
 	"baseline": [1.0, -1.0],
 	"thresholds": [1.5, 2.0, 5.0]
+    },
+    "time": {
+	"name": "time",
+	"short": "time",
+	"long": "current system time"
+    },
+    "hostname": {
+	"name": "hostname",
+	"short": "host",
+	"long": "system hostname"
+    },
+    "ip": {
+	"name": "ip",
+	"short": "ip",
+	"long": "system ip address"
+    },
+    "uptime": {
+	"name": "uptime",
+	"short": "up",
+	"long": "system uptime"
     }
 }

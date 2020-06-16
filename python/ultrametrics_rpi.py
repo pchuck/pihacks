@@ -165,6 +165,8 @@ class Notifier():
         :param v: The value to compare to the thresholds.
         :type v: int
         """
+        logging.debug('notifier: test_threshold: %s: %.2f %.2f %.2f %.2f' %
+                      (self.name, v, self.t1, self.t2, self.t3))
         if(v < self.t1):
             if(self.buzzer and self.buzz):
                 self.buzzer.stop()
@@ -222,6 +224,7 @@ class StatusLeds():
         :param color: The pin number (in BCM) of the led to light
         :type color: int
         """
+        logging.debug('StatusLeds: light: %s' % color)
         self.GPIO.output(self.colorpins.get(color), self.GPIO.HIGH)
 
     def light_threshold(self, v, t1, t2):
@@ -235,6 +238,8 @@ class StatusLeds():
         :param t2: The upper threshold.
         :type t2: int
         """
+        logging.debug('StatusLeds: threshold: %.2f %.2f %.2f' %
+                      (v, t1, t2))
         if(v < t1):               
             self.GPIO.output(self.colorpins.get('green'), self.GPIO.HIGH)
         elif(v >= t1 and v < t2):
@@ -286,6 +291,7 @@ class StatusLedsPwm():
         :param brightness: The brightness from 0 to 100.
         :type brightness: int
         """
+        logging.debug('StatusLedsPwm: light: %s' % color)
         if(brightness is None):
             brightness = self.default_brightness
         self.pwms[color].ChangeDutyCycle(brightness)
@@ -301,6 +307,9 @@ class StatusLedsPwm():
         :param t2: The upper threshold.
         :type t2: int
         """
+        logging.debug('StatusLedsPwm: threshold: %.2f %.2f %.2f' %
+                      (v, t1, t2))
+
         if(brightness is None):
             brightness = self.default_brightness
         if(v < t1):
@@ -955,20 +964,24 @@ class Sensor():
         :param sensor_type: The type of the sensor, e.g. "MQ6"
         :type sensor_type: str
         """
+        logging.debug('%s: reading sensor: %s' %
+                      (sensor_file, str(sensor_type)))
         with open(sensor_file) as jsonfile:
             self.sensors = json.load(jsonfile)
-
         self.key = Sensor.fix_name(sensor_type)
-        if(not self.key in self.sensors):
-            raise ValueError("No config data exists for: " + sensor_type)
         self.sensor = self.sensors[self.key]
         self.name = self.sensor['name']
         self.short = self.sensor['short']
         self.description = self.sensor['long']
-        self.thresholds = self.sensor['thresholds']
-        self.baseline = self.sensor['baseline']
-        self.baseline_r = self.sensor['baseline'][0]
-        self.baseline_v = self.sensor['baseline'][1]
+        # if there aren't any thresholds, skip along with baselines
+        if('thresholds' in self.sensor):
+            self.thresholds = self.sensor['thresholds']
+            self.baseline = self.sensor['baseline']
+            self.baseline_r = self.sensor['baseline'][0]
+            self.baseline_v = self.sensor['baseline'][1]
+        else:
+            self.thresholds, self.baseline = None, None
+            self.baseline_r, self.baseline_v = None, None
 
     @staticmethod
     def fix_name(unformatted_type):
