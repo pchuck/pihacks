@@ -80,10 +80,22 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, notifiers, interval, lb):
                 leds.clear_all(); leds.light('red')
                 lcd.display(name + (':%sNone' % lb), trace=None)
             else:
-                # display the result from the 'preferred' function
-                lcd.display(name + ':%s' % lb +
-                            sconfig['formats'][px] % v[px] +
-                            ' %s' % sconfig['units'][px], trace=l)
+                if('percent' in sconfig and sconfig['percent']):
+                    # display sensor reading as a percent better/worse base
+                    # e.g. 'mq135: -17.25% (1.37V)'
+                    print('v: ' + str(type(v[px])))
+                    print('baseline: ' + str(type(sensor.baseline[px])))
+                    v_rel = -v[px] * 100.0 / sensor.baseline[px] + 100.0
+                    lcd.display(sensor.short + ': %+.1f%%%s' % (v_rel, lb) + 
+                                sconfig['formats'][px] % v[px] + 
+                                ' %s' % sconfig['units'][px], trace=l)
+                else:
+                    # display sensor reading, e.g. 'mcpu: 63.38 C'
+                    # for analog sensors, px selects raw or voltage value.
+                    lcd.display(name + ':%s' % lb +
+                                sconfig['formats'][px] % v[px] +
+                                ' %s' % sconfig['units'][px], trace=l)
+
                 # if aux, display trace there
                 if(aux is not None):
                     aux.display_trace(trace=l)
