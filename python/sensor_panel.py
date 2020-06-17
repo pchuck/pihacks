@@ -122,6 +122,8 @@ if __name__ == '__main__':
         help='The file to read sensor configuration from')
     parser.add_argument('--sensor-info', type=str, 
         help='The file to read sensor info from')
+    parser.add_argument('--device-id', '-di', type=int, default=0,
+        help='The SPI device id (e.g. CE0, CE1) to address.')
     parser.add_argument('--display', type=str, default='dummy',
         choices=['ssd1306', 'lcd1602', 'ili9341', 'max7219', 'sevenseg', 'dummy'],
         help='The type of device for displaying info messages')
@@ -205,7 +207,8 @@ if __name__ == '__main__':
         color = args.color      
         fp = os.path.dirname(sys.argv[0]) + '/../fonts'
         font = ImageFont.truetype(fp + '/Volter__28Goldfish_29.ttf', 32)
-        lcd = umr.ILI9341Display(width, height, rotate=rotate,
+        lcd = umr.ILI9341Display(width, height,
+                                 device=args.device_id, rotate=rotate,
                                  trace_height=tr_h, trace_color=tr_c,
                                  color=color,
                                  font=font,
@@ -214,12 +217,13 @@ if __name__ == '__main__':
         from PIL import ImageFont
         fp = os.path.dirname(sys.argv[0]) + '/../fonts'
         font = ImageFont.truetype(fp + '/ProggyTiny.ttf', 8)
-        lcd = umr.MAX7219Display(width, height, rotate=rotate,
+        lcd = umr.MAX7219Display(width, height,
+                                 device=args.device_id, rotate=rotate,
                                  trace_height=tr_h,
                                  font=font,
                                  echo=False)
     elif(display_type =='sevenseg'):
-        lcd = umr.MAX7219SevenSegDisplay()
+        lcd = umr.MAX7219SevenSegDisplay(device=args.device_id)
     else:
         lcd = umr.DummyDisplay()
 

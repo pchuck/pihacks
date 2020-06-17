@@ -6,6 +6,6 @@
 $PIHOME/python/sensor_panel.py \
     --sensor-config=$PIHOME/config/sensor_config_cpuonly.json \
     --sensor-info=$PIHOME/config/sensor_info.json \
-    --display max7219 --rotate=1 --width=32 --height=8 \
+    --display max7219 --device-id=0 --rotate=1 --width=32 --height=8 \
     --trace-height=4 --line-break='' --interval=0.1 \
     12 26 13 16

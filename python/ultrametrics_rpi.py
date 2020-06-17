@@ -553,7 +553,7 @@ class LCD1602Display(BasicDisplay):
 class MAX7219SevenSegDisplay(BasicDisplay):
     """ implementation for displaying textual data on a display device
     """
-    def __init__(self, brightness=16, echo=False):
+    def __init__(self, device=0, brightness=16, echo=False):
         """
         :param echo: Whether or not to echo writes to the logger.
         :type echo: bool
@@ -567,7 +567,7 @@ class MAX7219SevenSegDisplay(BasicDisplay):
         self.echo = echo
         logging.info('looking for seven-segment on SPI bus')
         try:
-            self.serial = spi(port=0, device=0, gpio=noop())
+            self.serial = spi(port=0, device=device, gpio=noop())
             self.device = max7219(self.serial, cascaded=1)
             self.seg = self.sevensegment(self.device)
             self.seg.device.contrast(brightness)
@@ -646,7 +646,7 @@ class LumaDisplay(BasicDisplay):
     def __init__(self, width, height, rotate=0,
                  trace_height=16, echo=False,
                  font=None, color='White', trace_color='Yellow',
-                 i2c_addr=0x3c):
+                 i2c_addr=0x3c, device=0):
         """
         :param echo: Whether or not to echo writes to the logger.
         :type echo: bool
@@ -670,7 +670,7 @@ class LumaDisplay(BasicDisplay):
         # display device-specific setup, creates self.device
         from luma.core.render import canvas
         self.canvas = canvas
-        self._setup(rotate, width, height)
+        self._setup(rotate, width, height, device=device)
         self.device.clear()
         logging.info('OLED found')
         self.device.clear()
@@ -724,12 +724,12 @@ class LumaDisplay(BasicDisplay):
         self.device.cleanup()
 
 class ILI9341Display(LumaDisplay):
-    def _setup(self, rotate, width, height, i2c_addr=None):
+    def _setup(self, rotate, width, height, device=0, i2c_addr=None):
         from luma.core.interface.serial import spi, noop
         from luma.lcd.device import ili9341 as led
         
         logging.info('looking for LED on SPI bus')
-        serial = spi(port=0, device=0, gpio_DC=23, gpio_RST=24,
+        serial = spi(port=0, device=device, gpio_DC=23, gpio_RST=24,
                      bus_speed_hz=32000000)
         self.device = led(serial, gpio_LIGHT=25, active_low=False,
                           rotate=rotate)
@@ -745,11 +745,11 @@ class SSD1306Display(LumaDisplay):
 
 class MAX7219Display(LumaDisplay):
     # note: !!! need to expose orientation, rotate, intensity, etc?
-    def _setup(self, rotate, width, height):
+    def _setup(self, rotate, width, height, device=0):
         from luma.core.interface.serial import spi, noop
         from luma.led_matrix.device import max7219 as led
         logging.info('looking for matrix on spi..')
-        serial = spi(port=0, device=0, gpio=noop())
+        serial = spi(port=0, device=device, gpio=noop())
         self.device = led(serial, cascaded=4,
                           block_orientation=90,
                           rotate=0,
