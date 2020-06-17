@@ -736,7 +736,7 @@ class ILI9341Display(LumaDisplay):
         self.device.backlight(True)
 
 class SSD1306Display(LumaDisplay):
-    def _setup(self, rotate, width, height, i2c_addr=0x3C):
+    def _setup(self, rotate, width, height, i2c_addr=0x3C, device=0):
         from luma.core.interface.serial import i2c
         from luma.oled.device import ssd1306 as led
         logging.info('looking for OLED on i2c bus at %x' % i2c_addr)
