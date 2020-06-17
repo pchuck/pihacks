@@ -117,9 +117,10 @@
 	"display": true,
 	"trace": true,
 	"log": true,
+	"percent": true,
 	"preferred_index": 1,
 	"funcs": ["ads.read_raw(0)", "ads.read_voltage(0)"],
-	"formats": ["%d", "%f"],
+	"formats": ["%d", "%.4f"],
 	"units": ["", "V"],
 	"repeat": 5
     },
@@ -131,9 +132,10 @@
 	"display": true,
 	"trace": true,
 	"log": true,
+	"percent": true,
 	"preferred_index": 1,
 	"funcs": ["ads.read_raw(1)", "ads.read_voltage(1)"],
-	"formats": ["%d", "%f"],
+	"formats": ["%d", "%.4f"],
 	"units": ["", "V"],
 	"repeat": 5
     },
