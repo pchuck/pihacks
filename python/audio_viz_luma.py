@@ -38,13 +38,14 @@ def init_audio(resolution, sample_rate, channels, audio_id, chunk_size):
 #
 # initialize and return the new display device handle
 #
-def init_display(device, n, block_orientation, rotate, inreverse, intensity):
+def init_display(device, n, block_orientation, rotate, inreverse, intensity,
+                 device_id=0):
     # max7219, via SPI
     if(device.lower() == 'max7219'):
         from luma.core.interface.serial import spi, noop
         from luma.led_matrix.device import max7219 as led
         
-        serial = spi(port=0, device=0, gpio=noop())
+        serial = spi(port=0, device=device_id, gpio=noop())
         # spi_bus_speed = 8000000 # max: 32000000
         device = led(serial, cascaded=n, block_orientation=block_orientation,
                      rotate=rotate, blocks_arranged_in_reverse_order=inreverse)
@@ -55,7 +56,7 @@ def init_display(device, n, block_orientation, rotate, inreverse, intensity):
         from luma.core.interface.serial import spi, noop
         from luma.lcd.device import ili9341 as lcd
         # note: would be nice to parameterize other DC and RST wiring options
-        serial = spi(port=0, device=0, gpio_DC=24, gpio_RST=23,
+        serial = spi(port=0, device=device_id, gpio_DC=24, gpio_RST=23,
                      bus_speed_hz=32000000)
         device = lcd(serial, gpio_LIGHT=25, active_low=False)
         # , pwm_frequency=50) # this appears to be broken
@@ -145,6 +146,8 @@ if __name__ == "__main__":
     parser.add_argument('--device', '-dv', type=str, default='max7219',
         choices=['max7219', 'ssd1306', 'ili9341'],
         help='The type of device')
+    parser.add_argument('--device-id', '-di', type=int, default=0,
+        help='The SPI device id (e.g. CE0, CE1) to address.')
     parser.add_argument('--cascaded', '-n', type=int, default=1,
         help='Number of cascaded LED matrices (usu. max7219)')
     parser.add_argument('--block-orientation', '-bo', type=int, default=0,
@@ -179,7 +182,9 @@ if __name__ == "__main__":
                              args.block_orientation,
                              args.rotate,
                              args.reverse_order,
-                             args.intensity)
+                             args.intensity,
+                             device_id=args.device_id
+        )
 
         ar, ares = 16, pyaudio.paInt16 # audio resolution, in bits
         chans = 1 # mono

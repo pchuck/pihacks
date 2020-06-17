@@ -681,9 +681,6 @@ class LumaDisplay(BasicDisplay):
         self.x = self.device.width
         self.y = self.device.height
         self.trace_height = trace_height
-        with self.canvas(self.device) as draw:
-            draw.text((0, 0), 'initializing..',
-                      fill=self.color, font=font)
 
     def clear(self):
         """ Clear the display. """
@@ -709,8 +706,8 @@ class LumaDisplay(BasicDisplay):
 
         :param message: The message to display on the device.
         :type message: str
-        :param trace: Whether or not to display a graphical trace.
-        :type trace: bool
+        :param trace: The trace data to graph.
+        :type trace: list
         """
         with self.canvas(self.device) as draw:
             draw.text((0, 0), message, fill=self.color, font=self.font)
@@ -718,6 +715,15 @@ class LumaDisplay(BasicDisplay):
                 self._graph(draw, trace)
         if(self.echo):
             logging.info(message)
+            
+    def display_trace(self, trace=None):
+        """ Display a trace.
+        :param trace: The trace data to graph.
+        :type trace: list
+        """
+        with self.canvas(self.device) as draw:
+            if(trace is not None and len(trace) > 0):
+                self._graph(draw, trace)
 
     def destroy(self):
         """ Clean up the display. """

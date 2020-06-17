@@ -84,6 +84,10 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, notifiers, interval, lb):
                 lcd.display(name + ':%s' % lb +
                             sconfig['formats'][px] % v[px] +
                             ' %s' % sconfig['units'][px], trace=l)
+                # if aux, display trace there
+                if(aux is not None):
+                    aux.display_trace(trace=l)
+                
                 # update the status leds, buzzers and notifier
                 if(sensor is not None and sensor.thresholds is not None):
                     ts = [t * sensor.baseline[px] for t in sensor.thresholds]
@@ -127,6 +131,8 @@ if __name__ == '__main__':
     parser.add_argument('--display', type=str, default='dummy',
         choices=['ssd1306', 'lcd1602', 'ili9341', 'max7219', 'sevenseg', 'dummy'],
         help='The type of device for displaying info messages')
+    parser.add_argument('--aux-id', type=int, default=-1,
+        help='The SPI device id for displaying aux graphs. Must be max7219.')
     parser.add_argument('--rotate', type=int, default=0,
         choices=[0, 1, 2, 3],
         help='The amount to rotate the display.')
@@ -226,6 +232,14 @@ if __name__ == '__main__':
         lcd = umr.MAX7219SevenSegDisplay(device=args.device_id)
     else:
         lcd = umr.DummyDisplay()
+
+    aux = None
+    if(args.aux_id != -1):
+        aux = umr.MAX7219Display(width, height,
+                                 device=args.aux_id, rotate=rotate,
+                                 trace_height=tr_h,
+                                 font=None,
+                                 echo=False)
 
     lcd.display('initializing.. ')
     
