@@ -101,7 +101,8 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, notifiers, interval, lb):
                 # update the status leds, buzzers and notifier
                 if(sensor is not None and sensor.thresholds is not None):
                     ts = [t * sensor.baseline[px] for t in sensor.thresholds]
-                    leds.clear_all(); leds.light_threshold(v[px], *ts[:2])
+                    if(sconfig['leds']):
+                        leds.clear_all(); leds.light_threshold(v[px], *ts[:2])
                     if(sensor.name in notifiers):
                         notifiers[sensor.name].test_threshold(v[px])
         sleep(interval)

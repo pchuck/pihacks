@@ -19,16 +19,15 @@ from luma.led_matrix.device import max7219 as led
 from luma.core.render import canvas
 from luma.core.virtual import sevensegment
 
-
-# mappings from id to segment, in rotated and non-rotated mode
-# 0 - .                 7
-# 1 - top bar           6
-# 2 - top right bar     5
-# 3 - bottom right bar  4
-# 4 - bottom bar        3
-# 5 - left bottom bar   2
-# 6 - left top bar      1
-# 7 - middle bar        0
+# segment id's - y-coords and their corresponding segments
+# 7 - .
+# 6 - top bar
+# 5 - right top bar
+# 4 - right bottom bar
+# 3 - bottom bar
+# 2 - left bottom bar
+# 1 - left top bar
+# 0 - middle bar
 
 def init_device(port=0, device_id=0, cascaded=1, contrast=127):
     '''Initialize both the raw matrix device and sevensegment abstraction.
@@ -39,6 +38,36 @@ def init_device(port=0, device_id=0, cascaded=1, contrast=127):
     seg = sevensegment(device)
     device.contrast(contrast)
     return device, seg
+
+fluid_r = {7: {  1: [3, 2]},  6: {  0: [5],  1: [6, 1]},
+           5: {  1: [6, 0]},  4: {  0: [7],  1: [0, 3]},
+           3: {  0: [4, 7]},  2: {  0: [0, 3]},
+           1: {  0: [0, 6]},  0: {  0: [5, 4],  1: [0]}}
+
+fluid_l = {7: {  0: [4, 3]}, 6: {  -1: [5, 6],
+                 0: [1] },   5: {   0: [6, 0]},
+           4: {  0: [0, 3]}, 3: {   0: [2],
+                -1: [7]},    2: {  -1: [0, 7]},
+           1: { -1: [6, 0]}, 0: {   0: [1, 2], -1: [0]}}
+
+def sev_seg_fluid(device, t, delay):
+    x = device.width - 1
+    f = fluid_r
+    y = random.randrange(device.height)
+    for c in range(int(t / delay)):
+        with canvas(device) as draw:
+            draw.point((x, y), fill='white')
+            print('y ' + str(y))
+            print('f[y] ' + str(f[y]))
+            digit_inc = random.choice(list(f[y].keys()))
+            x -= digit_inc
+            y = random.choice(f[y][digit_inc])
+            print('y ' + str(y))
+            if(x < 0): f = fluid_l
+            if(x > device.width): f = fluid_r
+            
+            
+        time.sleep(delay)
 
 def render_segments(device, x, segment_sequence, forward, delay):
     '''Given a list of segments, activate each in sequence.
@@ -81,6 +110,17 @@ def sev_seg_snake_t2(device, loop=1, delay=0.05):
 def sev_seg_counter(seg, t, delay=0.05):
     for c in range(int(t / delay)):
         seg.text = str(c).rjust(seg.device.width, ' ')
+        time.sleep(delay)
+
+def sev_seg_powers(seg, base, t, delay=0.05):
+    power = 0
+    for c in range(int(t / delay)):
+        result = str(base ** power).rjust(seg.device.width, ' ')
+        if(len(result) > seg.device.width):
+            break
+        seg.text = result
+        power += 1
+
         time.sleep(delay)
 
 def sev_seg_random_chars(seg, t, delay=0.05, choices=string.ascii_letters):
@@ -155,18 +195,20 @@ try:
 
     device, seg = init_device(device_id=args.device_id, contrast=1)
 
+    sev_seg_fluid(device, t=5, delay=0.05)
+    sev_seg_powers(seg, 2, t=2, delay=0.05)
     sev_scroll_str(seg, string.ascii_lowercase, delay=0.05)
     sev_scroll_str(seg, string.ascii_lowercase, delay=0.05, reverse=True)
     sev_seg_clock(seg, t=2)
     sev_seg_date(seg, t=2)
     sev_seg_expl(seg, t=2, delay=0.05)
     sev_seg_random_chars(seg, t=2, choices=string.punctuation, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.digits, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.hexdigits, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.ascii_letters, delay=0.05)
     sev_seg_random_chars(seg, t=2, choices=string.ascii_lowercase, delay=0.05)
     sev_seg_random_chars(seg, t=2, choices=string.ascii_uppercase, delay=0.05)
+    sev_seg_random_chars(seg, t=2, choices=string.ascii_letters, delay=0.05)
     sev_seg_random_chars(seg, t=2, choices=string.printable, delay=0.05)
+    sev_seg_random_chars(seg, t=2, choices=string.hexdigits, delay=0.05)
+    sev_seg_random_chars(seg, t=2, choices=string.digits, delay=0.05)
     sev_seg_counter(seg, t=2, delay=0.05)
     sev_seg_waves(device, t=2, delay=0.05)
     sev_seg_snake_t1(device, loop=1, delay=0.05)

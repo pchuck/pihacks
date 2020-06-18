@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# sensor_panel, with output to an ssd1306 display device,
+# DHT device and status leds on the specified pins
+#
+$PIHOME/python/sensor_panel.py \
+    --sensor-config=$PIHOME/config/sensor_config_piz3.json \
+    --sensor-info=$PIHOME/config/sensor_info.json \
+    --adc-addr=0x48 \
+    --display sevenseg --device-id=0 --line-break='' --interval=1 \
+    12 26 13 16

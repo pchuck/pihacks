@@ -91,6 +91,13 @@
 	"thresholds": [1.8, 5.0, 5.1],
 	"note": "Low threshold for night/day. Others not used."
     },
+    "water": {
+	"name": "water",
+	"short": "H2O",
+	"long": "moisture level",
+	"baseline": [7270, 1.5],
+	"thresholds": [1.2, 1.5, 1.8]
+    },
     "pressure": {
 	"name" : "pressure",
 	"short" : "P",

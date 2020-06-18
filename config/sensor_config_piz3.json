@@ -1,0 +1,80 @@
+{
+    "time": {
+	"name": "time",
+	"display": true,
+	"funcs": ["umr.System.get_time()"],
+	"formats": ["%s"],
+	"units": [""],
+	"repeat": 1
+    },
+    "hostname": {
+	"name": "hostname",
+	"display": false,
+	"funcs": ["umr.System.get_hostname()"],
+	"formats": ["%s"],
+	"units": [""],
+	"repeat": 1
+    },
+    "ip": {
+	"name": "ip",
+	"display": false,
+	"funcs": ["umr.System.get_ip()"],
+	"formats": ["%s"],
+	"units": [""],
+	"repeat": 1
+    },
+    "cpu": {
+	"name": "cpu",
+	"leds": true,
+	"buzz": true,
+	"notify": false,
+	"display": true,
+	"trace": true,
+	"log": true,
+	"funcs": ["umr.System.get_cpu_temp()"],
+	"formats": ["%.2f"],
+	"units": ["C"],
+	"repeat": 3
+    },
+    "gpu": {
+	"name": "gpu",
+	"leds": false,
+	"buzz": false,
+	"notify": false,
+	"display": false,
+	"trace": false,
+	"log": true,
+	"funcs": ["umr.System.get_gpu_temp()"],
+	"formats": ["%.2f"],
+	"units": ["C"],
+	"repeat": 3
+    },
+    "light": {
+	"name": "light",
+	"leds": false,
+	"buzz": false,
+	"notify": false,
+	"display": true,
+	"trace": true,
+	"log": true,
+	"preferred_index": 1,
+	"funcs": ["ads.read_raw(0)", "ads.read_voltage(0)"],
+	"formats": ["%d", "%.1f"],
+	"units": ["", "V"],
+	"repeat": 3
+    },
+    "water": {
+	"name": "water",
+	"leds": true,
+	"buzz": false,
+	"notify": false,
+	"display": true,
+	"trace": true,
+	"log": true,
+	"preferred_index": 1,
+	"funcs": ["ads.read_raw(1)", "ads.read_voltage(1)"],
+	"formats": ["%d", "%.1f"],
+	"units": ["", "V"],
+	"repeat": 3
+    }
+}

@@ -603,6 +603,10 @@ class MAX7219SevenSegDisplay(BasicDisplay):
             body = message.split(':', 1)[1]
             if(metric == 'cpu' or metric == 'gpu' or metric == 'load'):
                 return message.replace('C', '')
+            if(metric == 'light'):
+                return message.replace('light', 'L')
+            if(metric == 'water'):
+                return message.replace('water', 'H2O')
             if(metric == 'uptime'):
                 return body[:-3]
             if(metric == 'ip'):
