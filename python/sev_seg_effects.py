@@ -57,15 +57,11 @@ def sev_seg_fluid(device, t, delay):
     for c in range(int(t / delay)):
         with canvas(device) as draw:
             draw.point((x, y), fill='white')
-            print('y ' + str(y))
-            print('f[y] ' + str(f[y]))
             digit_inc = random.choice(list(f[y].keys()))
             x -= digit_inc
             y = random.choice(f[y][digit_inc])
-            print('y ' + str(y))
             if(x < 0): f = fluid_l
             if(x > device.width): f = fluid_r
-            
             
         time.sleep(delay)
 
