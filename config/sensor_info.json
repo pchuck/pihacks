@@ -19,7 +19,7 @@
     },
     "mq5": {
 	"name": "mq5",
-	"short": "MH4/LPG",
+	"short": "MH4/PG",
 	"long": "LPG or methane",
 	"baseline": [898, 0.112128],
         "thresholds": [1.2, 1.4, 1.6]

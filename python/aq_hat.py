@@ -163,13 +163,13 @@ if __name__ == '__main__':
                 values.append(r)
 
                 # calculate a relative percentage of air-quality, for display
-                v_rel = -v * 100.0 / sensor.baseline_v + 100.0
+                v_rel = v * 100.0 / sensor.baseline_v - 100.0
                 if(args.height == 32): # two line display
-                    lcd.display('AQ=%+.2f%% (%.3fv)' %
-                                (v_rel, v), values)
+                    lcd.display('%s=%+.1f%% (%.2fv)' %
+                                (sensor.short, v_rel, v), values)
                 else: # 4 line text display
-                    lcd.display('AQ=%+.2f%%\nv=%.4fv/5v\nr=%d/2^%d' %
-                                (v_rel, v, r, ADR_BITS), values)
+                    lcd.display('%s=%+.2f%%\nv=%.4fv/5v\nr=%d/2^%d' %
+                                (sensor.short, v_rel, v, r, ADR_BITS), values)
 
                 # calculate thresholds, test and take action
                 v_baseline = sensor.baseline[1]
