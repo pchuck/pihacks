@@ -9,6 +9,8 @@
 # Distributed under the Mozilla Public License
 # http://www.mozilla.org/NPL/MPL-1.1.txt
 #
+import os
+import socket
 import time
 import random
 import string
@@ -181,6 +183,40 @@ def sev_scroll_str(seg, msg, reverse=False, delay=0.05):
         seg.text = msg[i:i + width][::-1] if reverse else msg[i:i + width]
         time.sleep(delay)
 
+def sev_seg_cpu(seg, t, delay=0.05):
+    for i in range(int(t / delay)):
+        tmp = open('/sys/class/thermal/thermal_zone0/temp')
+        cpu = tmp.read()
+        tmp.close()
+        seg.text = 'cpu %.1fC' % (float(cpu) / 1000.0)
+        time.sleep(delay)
+
+def sev_seg_gpu(seg, t, delay=0.05):
+    for i in range(int(t / delay)):
+        cmd = os.popen('vcgencmd measure_temp').read()
+        cmd = cmd.replace('temp=', '')
+        cmd = cmd.replace('\'', '')
+        cmd = cmd.replace('\n', '')
+        seg.text = 'gpu %s' % cmd
+        time.sleep(delay)
+
+def sev_seg_load(seg, t, delay=0.05):
+    for i in range(int(t / delay)):
+        seg.text = 'load %.2f' % os.getloadavg()[0]
+        time.sleep(delay)
+
+def sev_seg_free(seg, t, delay=0.05):
+    for i in range(int(t / delay)):
+        cmd = os.popen('free | awk \'FNR == 2 {print $4/1000}\'').read()
+        seg.text = 'free %.0f%%' % float(cmd)
+        time.sleep(delay)
+
+def sev_seg_ip(seg, t, delay=0.05):
+    for i in range(int(t / delay)):
+        ip = socket.gethostbyname(socket.gethostname())
+        seg.text = ip.rjust(seg.device.width + 3, ' ')
+        time.sleep(delay)
+
 try:
     parser = argparse.ArgumentParser(description='sev_seg_effects',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -191,24 +227,45 @@ try:
 
     device, seg = init_device(device_id=args.device_id, contrast=1)
 
-    sev_seg_fluid(device, t=5, delay=0.05)
-    sev_seg_powers(seg, 2, t=2, delay=0.05)
-    sev_scroll_str(seg, string.ascii_lowercase, delay=0.05)
-    sev_scroll_str(seg, string.ascii_lowercase, delay=0.05, reverse=True)
-    sev_seg_clock(seg, t=2)
-    sev_seg_date(seg, t=2)
-    sev_seg_expl(seg, t=2, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.punctuation, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.ascii_lowercase, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.ascii_uppercase, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.ascii_letters, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.printable, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.hexdigits, delay=0.05)
-    sev_seg_random_chars(seg, t=2, choices=string.digits, delay=0.05)
-    sev_seg_counter(seg, t=2, delay=0.05)
-    sev_seg_waves(device, t=2, delay=0.05)
-    sev_seg_snake_t1(device, loop=1, delay=0.05)
-    sev_seg_snake_t2(device, loop=1, delay=0.05)
+    while(True):
+        sev_seg_clock(seg, t=2)
+        sev_seg_fluid(device, t=1.8, delay=0.05)
+        
+        sev_seg_date(seg, t=2)
+        sev_seg_powers(seg, 2, t=2, delay=0.05)
+        
+        sev_seg_ip(seg, t=3, delay=0.2)
+        sev_seg_random_chars(seg, t=1, choices=string.punctuation,
+                             delay=0.05)
+        
+        sev_seg_free(seg, t=3, delay=0.2)
+        sev_seg_random_chars(seg, t=1, choices=string.ascii_lowercase,
+                             delay=0.05)
+        
+        sev_seg_load(seg, t=3, delay=0.2)
+        sev_seg_random_chars(seg, t=1, choices=string.ascii_uppercase,
+                             delay=0.05)
+        
+        sev_seg_cpu(seg, t=3, delay=0.2)
+        sev_seg_random_chars(seg, t=1, choices=string.ascii_letters,
+                             delay=0.05)
+        
+        sev_seg_gpu(seg, t=3, delay=0.2)
+        sev_seg_random_chars(seg, t=1, choices=string.printable, delay=0.05)
+        
+        sev_seg_snake_t1(device, loop=1, delay=0.02)
+        sev_seg_random_chars(seg, t=1, choices=string.hexdigits, delay=0.05)
+        
+
+        sev_seg_waves(device, t=2, delay=0.05)
+        sev_seg_random_chars(seg, t=1, choices=string.digits, delay=0.05)
+
+        sev_seg_snake_t2(device, loop=1, delay=0.02)
+
+        # sev_seg_counter(seg, t=2, delay=0.05)
+        # sev_scroll_str(seg, string.ascii_lowercase, delay=0.05)
+        # sev_scroll_str(seg, string.ascii_lowercase, delay=0.05, reverse=True)
+        # sev_seg_expl(seg, t=0.5, delay=0.05)
 
 except KeyboardInterrupt:
     pass
