@@ -81,9 +81,9 @@ def update(sl, sensor, sconfig, l, width, lcd, leds, notifiers, interval, lb):
                 lcd.display(name + (':%sNone' % lb), trace=None)
             else:
                 if('percent' in sconfig and sconfig['percent']):
-                    # display sensor reading as a percent better/worse base
+                    # display sensor reading as a percent above/below base
                     # e.g. 'mq135: -17.25% (1.37V)'
-                    v_rel = -v[px] * 100.0 / sensor.baseline[px] + 100.0
+                    v_rel = v[px] * 100.0 / sensor.baseline[px] - 100.0
                     lcd.display(sensor.short + ': %+.1f%%%s' % (v_rel, lb) + 
                                 sconfig['formats'][px] % v[px] + 
                                 ' %s' % sconfig['units'][px], trace=l)

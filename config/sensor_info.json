@@ -35,8 +35,7 @@
 	"name": "mq7",
 	"short": "CO",
 	"long": "carbon monoxide",
-	"baseline": [7864, 0.6],
-	"baseline_old": [2948, 0.368635],
+	"baseline": [2674, 0.3344],
 	"thresholds": [1.2, 1.4, 1.6],
 	"thresholds_old": [1.15, 1.25, 1.35]
     },
@@ -58,7 +57,7 @@
 	"short": "CO2",
 	"shortish": "CX/CO2",
 	"long": "contaminants, combustibles or CO2",
-	"baseline": [9713, 1.214233],
+	"baseline": [11994, 1.4995],
 	"thresholds": [1.3, 1.5, 1.7],
 	"thresholds_test": [1.25, 1.3, 1.35]
     },
