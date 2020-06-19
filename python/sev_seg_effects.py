@@ -208,7 +208,7 @@ def sev_seg_load(seg, t, delay=0.05):
 def sev_seg_free(seg, t, delay=0.05):
     for i in range(int(t / delay)):
         cmd = os.popen('free | awk \'FNR == 2 {print $4/1000}\'').read()
-        seg.text = 'free %.0f%%' % float(cmd)
+        seg.text = ('%.0f MB' % float(cmd)).rjust(seg.device.width, ' ')
         time.sleep(delay)
 
 def sev_seg_ip(seg, t, delay=0.05):
