@@ -5,13 +5,22 @@
 # real-time visualization of audio on raspberry pi using luma
 # currently only supports max7219 led array
 #
-# Uses the luma libraries: luma.core, luma.led-matrix, 
-# and requires pyaudio
+# Requires python libraries: luma.core, luma.led-matrix, pyaudio
+# system libs: libportaudio0 libportaudio2 libportaudiocpp0 portaudio19-dev
 #
-# notes on (alsa) audio/mic tweaks to optimize the display:
+# To list available input devices:
+#   arecord -l
+#
+# Notes on (alsa) audio/mic tweaks to optimize the display:
 #   amixer sset 'Input Mux' 'Mic'
 #   amixer sset 'Mic' toggle
 #   amixer sset 'Mic Boost' 1
+#
+# If the input device is not default, use '-c' to specify the card, e.g.
+#   amixer -c 1 sset 'Mic' toggle
+#
+# To set the microphone gain of the non-default device.
+#   amixer -c 1 sset Mic Capture 350
 #
 # Copyright (C) 2020, Patrick Charles
 # Distributed under the Mozilla Public License
