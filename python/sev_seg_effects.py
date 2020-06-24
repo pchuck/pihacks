@@ -213,8 +213,11 @@ def sev_seg_free(seg, t, delay=0.05):
 
 def sev_seg_ip(seg, t, delay=0.05):
     for i in range(int(t / delay)):
-        ip = socket.gethostbyname(socket.gethostname())
-        seg.text = ip.rjust(seg.device.width + 3, ' ')
+        try: 
+            ip = socket.gethostbyname(socket.gethostname())
+            seg.text = ip.rjust(seg.device.width + 3, ' ')
+        except socket.gaierror:
+            pass # ignore
         time.sleep(delay)
 
 try:
@@ -254,14 +257,12 @@ try:
         sev_seg_random_chars(seg, t=1, choices=string.printable, delay=0.05)
         
         sev_seg_snake_t1(device, loop=1, delay=0.02)
-        sev_seg_random_chars(seg, t=1, choices=string.hexdigits, delay=0.05)
-        
+        sev_seg_waves(device, t=1, delay=0.05)
 
-        sev_seg_waves(device, t=2, delay=0.05)
-        sev_seg_random_chars(seg, t=1, choices=string.digits, delay=0.05)
+        # sev_seg_random_chars(seg, t=1, choices=string.hexdigits, delay=0.05)
+        # sev_seg_random_chars(seg, t=1, choices=string.digits, delay=0.05)
 
-        sev_seg_snake_t2(device, loop=1, delay=0.02)
-
+        # sev_seg_snake_t2(device, loop=1, delay=0.02)
         # sev_seg_counter(seg, t=2, delay=0.05)
         # sev_scroll_str(seg, string.ascii_lowercase, delay=0.05)
         # sev_scroll_str(seg, string.ascii_lowercase, delay=0.05, reverse=True)
