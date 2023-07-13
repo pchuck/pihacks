@@ -28,28 +28,56 @@ keys = keybow.keys
 keyboard = Keyboard(usb_hid.devices)
 layout = KeyboardLayoutUS(keyboard)
 
-# macros
-M_1 = "one!"
+# text macros
+M_1 = "one"
 M_2 = "two"
-M_3 = "three!"
-# toggle different desktops
+M_3 = "three"
+# multi-key toggles (desktop switching)
 DT_1 = (Keycode.CONTROL, Keycode.ONE)
 DT_2 = (Keycode.CONTROL, Keycode.TWO)
 DT_3 = (Keycode.CONTROL, Keycode.THREE)
 DT_4 = (Keycode.CONTROL, Keycode.FOUR)
-# mini arrow pad
+DT_5 = (Keycode.CONTROL, Keycode.FIVE)
+# single-key codes (mini arrow pad)
 LEFT  = Keycode.LEFT_ARROW
-RGHT = Keycode.RIGHT_ARROW
+RGHT  = Keycode.RIGHT_ARROW
 UP    = Keycode.UP_ARROW
 DOWN  = Keycode.DOWN_ARROW
 PLUS  = Keycode.KEYPAD_PLUS
-# toggle macros
-F_13   = Keycode.F13 # stage manager on/off
-F_14   = Keycode.F14 # open finder
-F_15   = Keycode.F15 # 
-F_16   = Keycode.F16 #
-F_17   = Keycode.F17 #
-F_18   = Keycode.F18 #
+PGUP  = Keycode.PAGE_UP
+PGDN  = Keycode.PAGE_DOWN
+# custom macros (assigned in keyboard shortcuts)
+F_13   = Keycode.F13
+F_14   = Keycode.F14
+F_15   = Keycode.F15
+F_16   = Keycode.F16
+F_17   = Keycode.F17
+F_18   = Keycode.F18
+
+# other (for reference)
+#   scroll          - two fingers scroll
+#   zoom in/out     - two fingers pinch
+#   smart zoom      - two fingers double-tap
+#   rotate          - two fingers rotate
+#   nav pages       - two fingers swipe l/r
+#   nav desktops    - three fingers swipe l/r
+#   mission control - three fingers swipe up      F3
+#   app expose      - three fingers swipe down    ^+(down)
+#   launchpad       - three fingers pinch
+#   show desktop    - three fingers spread        F11
+#
+#   DND on/off
+#   save screen as file                           shift+cmd+3
+#   save screen to clipboard                    ^+shift+cmd+3
+#   save selection to file                        shift+cmd+4
+#   save selection to clipboard                 ^+shift+cmd+4
+#   screenshot/recording options                  shift+cmd+5
+#   zoom in/out                                   shift+cmd+ +/-
+# custom
+#   stage manager                                 F13
+#   show notification center                      F15
+#   launch finder                                 
+
 
 # Sequentially mapped keycodes, associated with keys 0-15.
 # Layed out onscreen in array matching 4x4 keypad.
@@ -59,13 +87,13 @@ keymap = {
     3: DT_1,  7: DT_2,  11: DT_3,   15: DT_4,
 
     
-    2: F_14,  6: UP,    10: F_17,   14: M_3,
+    2: F_15,  6: UP,    10: PGUP,   14: M_3,
 
     
-    1: LEFT,  5: F_15,   9: RGHT,   13: PLUS,
+    1: LEFT,  5: DT_5,   9: RGHT,   13: M_2,
 
     
-    0: F_13,  4: DOWN,   8: F_16,   12: M_2
+    0: F_13,  4: DOWN,   8: PGDN,   12: M_1
 }
 
 # default colour to set the keys when pressed
