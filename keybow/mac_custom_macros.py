@@ -29,32 +29,43 @@ keyboard = Keyboard(usb_hid.devices)
 layout = KeyboardLayoutUS(keyboard)
 
 # macros
-MESSAGE = "test!"
+M_1 = "one!"
+M_2 = "two"
+M_3 = "three!"
 # toggle different desktops
-DESKTOP_1 = (Keycode.CONTROL, Keycode.ONE)
-DESKTOP_2 = (Keycode.CONTROL, Keycode.TWO)
-DESKTOP_3 = (Keycode.CONTROL, Keycode.THREE)
-DESKTOP_4 = (Keycode.CONTROL, Keycode.FOUR)
+DT_1 = (Keycode.CONTROL, Keycode.ONE)
+DT_2 = (Keycode.CONTROL, Keycode.TWO)
+DT_3 = (Keycode.CONTROL, Keycode.THREE)
+DT_4 = (Keycode.CONTROL, Keycode.FOUR)
+# mini arrow pad
+LEFT  = Keycode.LEFT_ARROW
+RGHT = Keycode.RIGHT_ARROW
+UP    = Keycode.UP_ARROW
+DOWN  = Keycode.DOWN_ARROW
+PLUS  = Keycode.KEYPAD_PLUS
+# toggle macros
+F_13   = Keycode.F13 # stage manager on/off
+F_14   = Keycode.F14 # open finder
+F_15   = Keycode.F15 # 
+F_16   = Keycode.F16 #
+F_17   = Keycode.F17 #
+F_18   = Keycode.F18 #
 
-# Sequentially mapped keycodes, associated with keys 0-15
-# Replace these with Keycode tuples or strings
+# Sequentially mapped keycodes, associated with keys 0-15.
+# Layed out onscreen in array matching 4x4 keypad.
+# Replace w/ references to Keycode tuples or strings, as desired
 keymap = {
-    0: MESSAGE,
-    1: "one",
-    2: "two",
-    3: DESKTOP_1,
-    4: "four",
-    5: "five",
-    6: "six",
-    7: DESKTOP_2,
-    8: "eight",
-    9: "nine",
-   10: "ten",
-   11: DESKTOP_3,
-   12: "twelve",
-   13: "thirteen",
-   14: "fourteen",
-   15: DESKTOP_4
+    
+    3: DT_1,  7: DT_2,  11: DT_3,   15: DT_4,
+
+    
+    2: F_14,  6: UP,    10: F_17,   14: M_3,
+
+    
+    1: LEFT,  5: F_15,   9: RGHT,   13: PLUS,
+
+    
+    0: F_13,  4: DOWN,   8: F_16,   12: M_2
 }
 
 # default colour to set the keys when pressed
@@ -68,6 +79,8 @@ for key in keys:
         # send as keycodes or a string, depending on the type
         if isinstance(keycodes, tuple):
             keyboard.send(*keycodes)
+        elif isinstance(keycodes, int):
+            keyboard.send(keycodes)
         else:
             layout.write(keycodes)
         # set the color
