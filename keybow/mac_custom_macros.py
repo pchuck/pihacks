@@ -38,6 +38,7 @@ DT_2 = (Keycode.CONTROL, Keycode.TWO)
 DT_3 = (Keycode.CONTROL, Keycode.THREE)
 DT_4 = (Keycode.CONTROL, Keycode.FOUR)
 DT_5 = (Keycode.CONTROL, Keycode.FIVE)
+SPEAK = (Keycode.ALT, Keycode.ESCAPE)
 # single-key codes (mini arrow pad)
 LEFT  = Keycode.LEFT_ARROW
 RGHT  = Keycode.RIGHT_ARROW
@@ -90,7 +91,7 @@ keymap = {
     2: F_15,  6: UP,    10: PGUP,   14: M_3,
 
     
-    1: LEFT,  5: DT_5,   9: RGHT,   13: M_2,
+    1: LEFT,  5: DT_5,   9: RGHT,   13: PLUS,
 
     
     0: F_13,  4: DOWN,   8: PGDN,   12: M_1
