@@ -1,7 +1,7 @@
 # Keybow 2040, or similar, control script
 # Customizable map, supporting both keycodes and string macros
 #
-# arrow pad w/ desktop shortcuts
+# numpad
 #
 # derived from:
 #   SPDX-FileCopyrightText: 2021 Sandy Macdonald
@@ -56,6 +56,8 @@ PGDN  = Keycode.PAGE_DOWN
 HOME  = Keycode.HOME
 END   = Keycode.END
 ENTER = Keycode.ENTER
+DOT   = Keycode.KEYPAD_PERIOD
+
 # custom macros (assigned in keyboard shortcuts)
 F_13   = Keycode.F13
 F_14   = Keycode.F14
@@ -63,47 +65,33 @@ F_15   = Keycode.F15
 F_16   = Keycode.F16
 F_17   = Keycode.F17
 F_18   = Keycode.F18
-
-# other (for reference)
-#   scroll          - two fingers scroll
-#   zoom in/out     - two fingers pinch
-#   smart zoom      - two fingers double-tap
-#   rotate          - two fingers rotate
-#   nav pages       - two fingers swipe l/r
-#   nav desktops    - three fingers swipe l/r
-#   mission control - three fingers swipe up      F3
-#   app expose      - three fingers swipe down    ^+(down)
-#   launchpad       - three fingers pinch
-#   show desktop    - three fingers spread        F11
-#
-#   DND on/off
-#   save screen as file                           shift+cmd+3
-#   save screen to clipboard                    ^+shift+cmd+3
-#   save selection to file                        shift+cmd+4
-#   save selection to clipboard                 ^+shift+cmd+4
-#   screenshot/recording options                  shift+cmd+5
-#   zoom in/out                                   shift+cmd+ +/-
-# custom
-#   stage manager                                 F13
-#   show notification center                      F15
-#   launch finder                                 
-
+# numeric keypad
+ZERO   = Keycode.ZERO
+ONE    = Keycode.ONE
+TWO    = Keycode.TWO
+THREE  = Keycode.THREE
+FOUR   = Keycode.FOUR
+FIVE   = Keycode.FIVE
+SIX    = Keycode.SIX
+SEVEN  = Keycode.SEVEN
+EIGHT  = Keycode.EIGHT
+NINE   = Keycode.NINE
 
 # Sequentially mapped keycodes, associated with keys 0-15.
 # Layed out onscreen in array matching 4x4 keypad.
 # Replace w/ references to Keycode tuples or strings, as desired
 keymap = {
     
-    3: DT_1,  7: DT_2,  11: DT_3,   15: DT_4,
+    3: SEVEN, 7: EIGHT, 11: NINE,   15: MINUS,
 
     
-    2: F_15,  6: UP,    10: PGUP,   14: M_3,
+    2: FOUR,  6: FIVE,  10:  SIX,   14: PLUS,
 
     
-    1: LEFT,  5: DT_5,   9: RGHT,   13: PLUS,
+    1: ONE,   5: TWO,    9: THREE,  13: MULT,
 
     
-    0: F_13,  4: DOWN,   8: PGDN,   12: M_1
+    0: ZERO,  4: DIV,    8: DOT,   12: ENTER
 }
 
 # default colour to set the keys when pressed

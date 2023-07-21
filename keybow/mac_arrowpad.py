@@ -1,7 +1,7 @@
 # Keybow 2040, or similar, control script
 # Customizable map, supporting both keycodes and string macros
 #
-# arrow pad w/ desktop shortcuts
+# arrowpad
 #
 # derived from:
 #   SPDX-FileCopyrightText: 2021 Sandy Macdonald
@@ -64,46 +64,21 @@ F_16   = Keycode.F16
 F_17   = Keycode.F17
 F_18   = Keycode.F18
 
-# other (for reference)
-#   scroll          - two fingers scroll
-#   zoom in/out     - two fingers pinch
-#   smart zoom      - two fingers double-tap
-#   rotate          - two fingers rotate
-#   nav pages       - two fingers swipe l/r
-#   nav desktops    - three fingers swipe l/r
-#   mission control - three fingers swipe up      F3
-#   app expose      - three fingers swipe down    ^+(down)
-#   launchpad       - three fingers pinch
-#   show desktop    - three fingers spread        F11
-#
-#   DND on/off
-#   save screen as file                           shift+cmd+3
-#   save screen to clipboard                    ^+shift+cmd+3
-#   save selection to file                        shift+cmd+4
-#   save selection to clipboard                 ^+shift+cmd+4
-#   screenshot/recording options                  shift+cmd+5
-#   zoom in/out                                   shift+cmd+ +/-
-# custom
-#   stage manager                                 F13
-#   show notification center                      F15
-#   launch finder                                 
-
-
 # Sequentially mapped keycodes, associated with keys 0-15.
 # Layed out onscreen in array matching 4x4 keypad.
 # Replace w/ references to Keycode tuples or strings, as desired
 keymap = {
     
-    3: DT_1,  7: DT_2,  11: DT_3,   15: DT_4,
+    3: DT_1,  7: DIV,   11: MULT,   15: BACK,
 
     
-    2: F_15,  6: UP,    10: PGUP,   14: M_3,
+    2: HOME,  6: UP,    10: PGUP,   14: MINUS,
 
     
     1: LEFT,  5: DT_5,   9: RGHT,   13: PLUS,
 
     
-    0: F_13,  4: DOWN,   8: PGDN,   12: M_1
+    0: END,   4: DOWN,   8: PGDN,   12: ENTER
 }
 
 # default colour to set the keys when pressed
