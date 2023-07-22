@@ -30,17 +30,9 @@ keys = keybow.keys
 keyboard = Keyboard(usb_hid.devices)
 layout = KeyboardLayoutUS(keyboard)
 
-# text macros
-M_1 = "one"
-M_2 = "two"
-M_3 = "three"
 # multi-key toggles (desktop switching)
 DT_1 = (Keycode.CONTROL, Keycode.ONE)
-DT_2 = (Keycode.CONTROL, Keycode.TWO)
-DT_3 = (Keycode.CONTROL, Keycode.THREE)
-DT_4 = (Keycode.CONTROL, Keycode.FOUR)
 DT_5 = (Keycode.CONTROL, Keycode.FIVE)
-SPEAK = (Keycode.ALT, Keycode.ESCAPE)
 # single-key codes (mini arrow pad)
 LEFT  = Keycode.LEFT_ARROW
 RGHT  = Keycode.RIGHT_ARROW
@@ -56,13 +48,6 @@ PGDN  = Keycode.PAGE_DOWN
 HOME  = Keycode.HOME
 END   = Keycode.END
 ENTER = Keycode.ENTER
-# custom macros (assigned in keyboard shortcuts)
-F_13   = Keycode.F13
-F_14   = Keycode.F14
-F_15   = Keycode.F15
-F_16   = Keycode.F16
-F_17   = Keycode.F17
-F_18   = Keycode.F18
 
 # Sequentially mapped keycodes, associated with keys 0-15.
 # Layed out onscreen in array matching 4x4 keypad.
