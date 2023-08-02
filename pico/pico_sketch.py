@@ -28,7 +28,8 @@ class LCD_1inch3(framebuf.FrameBuffer):
         self.cs(1)
         self.spi = SPI(1)
         self.spi = SPI(1,1000_000)
-        self.spi = SPI(1,100000_000,polarity=0, phase=0,sck=Pin(SCK),mosi=Pin(MOSI),miso=None)
+        self.spi = SPI(1,100000_000,polarity=0,
+                       phase=0,sck=Pin(SCK),mosi=Pin(MOSI),miso=None)
         self.dc = Pin(DC,Pin.OUT)
         self.dc(1)
         self.buffer = bytearray(self.height * self.width * 2)
@@ -39,6 +40,8 @@ class LCD_1inch3(framebuf.FrameBuffer):
         self.green =   0x001f
         self.blue  =   0xf800
         self.white =   0xffff
+        self.black =   0x0000
+        self.yellow =  0x07ff
         
     def write_cmd(self, cmd):
         self.cs(1)
@@ -55,7 +58,7 @@ class LCD_1inch3(framebuf.FrameBuffer):
         self.cs(1)
 
     def init_display(self):
-        """Initialize dispaly"""  
+        """Initialize display"""  
         self.rst(1)
         self.rst(0)
         self.rst(1)
@@ -160,30 +163,30 @@ class LCD_1inch3(framebuf.FrameBuffer):
 if __name__=='__main__':
     pwm = PWM(Pin(BL))
     pwm.freq(1000)
-    pwm.duty_u16(32768)#max 65535
+    pwm.duty_u16(32768) # max 65535
 
     LCD = LCD_1inch3()
     #color BRG
-    LCD.fill(LCD.white)
+    LCD.fill(LCD.black)
     LCD.show()
 
     keyA = Pin(15,Pin.IN,Pin.PULL_UP)
     keyB = Pin(17,Pin.IN,Pin.PULL_UP)
     keyX = Pin(19 ,Pin.IN,Pin.PULL_UP)
-    keyY= Pin(21 ,Pin.IN,Pin.PULL_UP)
+    keyY = Pin(21 ,Pin.IN,Pin.PULL_UP)
     
     up = Pin(2,Pin.IN,Pin.PULL_UP)
-    dowm = Pin(18,Pin.IN,Pin.PULL_UP)
+    down = Pin(18,Pin.IN,Pin.PULL_UP)
     left = Pin(16,Pin.IN,Pin.PULL_UP)
     right = Pin(20,Pin.IN,Pin.PULL_UP)
     ctrl = Pin(3,Pin.IN,Pin.PULL_UP)
     
     while(1):
-        LCD.fill_rect(LCD.x-1,LCD.y-1,3,3,LCD.blue)
+        LCD.fill_rect(LCD.x-1,LCD.y-1,3,3,LCD.yellow)
 
         if keyA.value() == 0:
             print("keyA")
-            LCD.fill(LCD.white)
+            LCD.fill(LCD.black)
            
         if(keyB.value() == 0):
             print("keyB")
@@ -197,7 +200,7 @@ if __name__=='__main__':
         if(up.value() == 0):
             LCD.y = LCD.y - 1
             
-        if(dowm.value() == 0):
+        if(down.value() == 0):
             LCD.y = LCD.y + 1
             
         if(left.value() == 0):
