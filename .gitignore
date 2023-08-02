@@ -1,0 +1,5 @@
+# ignore drivers and samples
+Pico_code/
+Pico-LCD-1.3/
+Pico_roms/
+
