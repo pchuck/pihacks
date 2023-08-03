@@ -279,7 +279,7 @@ if __name__=='__main__':
         row += step
         if row >= LCD.height:
             row = 0
-            step -= 1
+            step = int(step / 2)
 
         LCD.show()
 
