@@ -1,7 +1,7 @@
 # micropython for Raspberry Pi Pico
 # pi pico + LCD 1.3" ST7789 SPI Display (240x240 IPS LCD)
 #
-# etch-a-sketch
+# pico_fractal.py - mandelbrot renderer
 #
 from machine import Pin,SPI,PWM
 import framebuf
@@ -235,11 +235,14 @@ if __name__=='__main__':
     debounce = False # button debounce
     changed = True # zoom or pan change tracking
 
-    while(1):
+    while True:
         d = (M.x1 - M.x0) / 4 # zoom factor
 
         if changed: # redraw from start
-            print(d)
+            print("zoom_level: " + str(d))
+            print("region: " + 
+                  "(" + str(M.x0) + ", " + str(M.y0) + ")-" +
+                  "(" + str(M.x1) + ", " + str(M.y1) + ")")
             step = maxstep
             row = 0
             changed = False
@@ -248,10 +251,10 @@ if __name__=='__main__':
             debounce = True; print("ctrl")
 
         if(keyA.value() == 0 and debounce == False):
-            M.zoom_out(d); debounce = True; changed = True; print("zout")
+            M.zoom_out(d); debounce = True; changed = True; print("op: zout")
 
         if(keyB.value() == 0 and debounce == False):
-            M.zoom_in(d); debounce = True; changed = True; print("zin")
+            M.zoom_in(d);  debounce = True; changed = True; print("op: zin")
 
         if(keyX.value() == 0): # unused
             debounce = True; print("keyX")
@@ -260,38 +263,36 @@ if __name__=='__main__':
             debounce = True; print("keyY")
         
         if(up.value() == 0 and debounce == False):
-            M.pan_up(d); debounce = True; changed = True; print("up")
+            M.pan_up(d);    debounce = True; changed = True; print("op: up")
 
         if(down.value() == 0 and debounce == False):
-            M.pan_down(d); debounce = True; changed = True; print("down")
+            M.pan_down(d);  debounce = True; changed = True; print("op: down")
         
         if(left.value() == 0 and debounce == False):
-            M.pan_left(d); debounce = True; changed = True; print("left")
+            M.pan_left(d);  debounce = True; changed = True; print("op: left")
         
         if(right.value() == 0 and debounce == False):
-            M.pan_right(d); debounce = True; changed = True; print("right")
+            M.pan_right(d); debounce = True; changed = True; print("op: right")
 
-        # full screen rendering
-        # M.render(step=step, n=n)
-        # vs.
-        # row-wise rendering
+        # row-wise rendering, rather than full: M.render(step=step, n=n)
         if(step > minstep):
             M.render_row(row, step=step, n=n)
 
-        if(debounce == True):
+        if(debounce == True): # button debouncing
             time.sleep(0.25)
             debounce = False
 
-        row += step
+        row += step # progressive rendering
         if row >= LCD.height:
             row = 0
             step = int(step / 2)
+            if(step < minstep):
+                step = minstep
+            else:
+                print("step: " + str(step))
 
         LCD.show()
 
     time.sleep(1)
-    LCD.fill(0xFFFF)
-
-
-
-
+    LCD.fill(LCD.white)
+    LCD.show()

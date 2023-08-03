@@ -1,7 +1,7 @@
 # micropython for Raspberry Pi Pico
 # pi pico + LCD 1.3" ST7789 SPI Display (240x240 IPS LCD)
 #
-# etch-a-sketch
+# pico_sketch.py - etch-a-sketch
 #
 from machine import Pin,SPI,PWM
 import framebuf
@@ -19,8 +19,6 @@ class LCD_1inch3(framebuf.FrameBuffer):
     def __init__(self):
         self.width = 240
         self.height = 240
-        self.x = int(self.width / 2)
-        self.y = int(self.height / 2)
 
         self.cs = Pin(CS,Pin.OUT)
         self.rst = Pin(RST,Pin.OUT)
@@ -160,63 +158,71 @@ class LCD_1inch3(framebuf.FrameBuffer):
         self.spi.write(self.buffer)
         self.cs(1)
 
+class EtchASketch():
+    def __init__(self, LCD):
+        self.LCD = LCD
+        self.x = int(self.LCD.width / 2)
+        self.y = int(self.LCD.height / 2)
+        self.trace_size = 3
+        self.trace_color = self.LCD.yellow
+        self.bg_color = self.LCD.black
+        self.LCD.fill(self.bg_color)
+        self.LCD.show()
+        
+    def draw(self):
+        self.LCD.fill_rect(self.x-1, self.y-1, self.trace_size, self.trace_size, self.trace_color)
+        self.LCD.show()
+        
+    def clear(self):
+        self.LCD.fill(self.bg_color)
+        self.LCD.show()
+        
+    def move_up(self):
+        self.y = self.y - 1
+        self.draw()
+        
+    def move_down(self):
+        self.y = self.y + 1
+        self.draw()
+        
+    def move_left(self):
+        self.x = self.x - 1
+        self.draw()
+        
+    def move_right(self):
+        self.x = self.x + 1
+        self.draw()
+
 if __name__=='__main__':
     pwm = PWM(Pin(BL))
     pwm.freq(1000)
     pwm.duty_u16(32768) # max 65535
 
     LCD = LCD_1inch3()
-    #color BRG
-    LCD.fill(LCD.black)
-    LCD.show()
+    Sketch = EtchASketch(LCD)
 
-    keyA = Pin(15,Pin.IN,Pin.PULL_UP)
-    keyB = Pin(17,Pin.IN,Pin.PULL_UP)
-    keyX = Pin(19 ,Pin.IN,Pin.PULL_UP)
-    keyY = Pin(21 ,Pin.IN,Pin.PULL_UP)
+    keyA  = Pin(15,Pin.IN,Pin.PULL_UP)
+    keyB  = Pin(17,Pin.IN,Pin.PULL_UP)
+    keyX  = Pin(19,Pin.IN,Pin.PULL_UP)
+    keyY  = Pin(21,Pin.IN,Pin.PULL_UP)
     
-    up = Pin(2,Pin.IN,Pin.PULL_UP)
-    down = Pin(18,Pin.IN,Pin.PULL_UP)
-    left = Pin(16,Pin.IN,Pin.PULL_UP)
+    up    = Pin( 2,Pin.IN,Pin.PULL_UP)
+    down  = Pin(18,Pin.IN,Pin.PULL_UP)
+    left  = Pin(16,Pin.IN,Pin.PULL_UP)
     right = Pin(20,Pin.IN,Pin.PULL_UP)
-    ctrl = Pin(3,Pin.IN,Pin.PULL_UP)
+    ctrl  = Pin( 3,Pin.IN,Pin.PULL_UP)
     
-    while(1):
-        LCD.fill_rect(LCD.x-1,LCD.y-1,3,3,LCD.yellow)
-
-        if keyA.value() == 0:
-            print("keyA")
-            LCD.fill(LCD.black)
-           
-        if(keyB.value() == 0):
-            print("keyB")
-            
-        if(keyX.value() == 0):
-            print("keyX")
-            
-        if(keyY.value() == 0):
-            print("keyY")
-            
-        if(up.value() == 0):
-            LCD.y = LCD.y - 1
-            
-        if(down.value() == 0):
-            LCD.y = LCD.y + 1
-            
-        if(left.value() == 0):
-            LCD.x = LCD.x - 1
-        
-        if(right.value() == 0):
-            LCD.x = LCD.x + 1
-        
-        if(ctrl.value() == 0):
-            print("ctrl")
-                       
-        LCD.show()
+    while True:
+        if  keyA.value() == 0: Sketch.clear()
+        if  keyB.value() == 0: print("keyB") # unused
+        if  keyX.value() == 0: print("keyX") # unused
+        if  keyY.value() == 0: print("keyY") # unused
+        if    up.value() == 0: Sketch.move_up()
+        if  down.value() == 0: Sketch.move_down()
+        if  left.value() == 0: Sketch.move_left()
+        if right.value() == 0: Sketch.move_right()
+        if  ctrl.value() == 0: print("ctrl") # unused
 
     time.sleep(1)
-    LCD.fill(0xFFFF)
-
-
-
-
+    LCD.fill(LCD.white)
+    LCD.show()

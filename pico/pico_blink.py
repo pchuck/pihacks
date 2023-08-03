@@ -1,6 +1,6 @@
 # micropython for Raspberry Pi Pico
 #
-# flash the onboard LED
+# pico_blink.py - onboard LED flasher. minimal pico app.
 #
 import machine
 import utime
