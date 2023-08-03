@@ -9,7 +9,11 @@ BOOTPATH=/Volumes/RPI-RP2 # mounted device bootloader path
 #DEV=/dev/ttyACM0
 DEV=/dev/cu.usbmodem1442301 # device
 PARAMS=--buffer-size 512 # rshell parameters
-MAIN=pico_sketch.py # main script
+
+# main script
+#MAIN=pico_blink.py
+#MAIN=pico_sketch.py
+MAIN=pico_fractal.py 
 
 # list available devices (use to set 'DEV')
 find:
