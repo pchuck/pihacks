@@ -248,7 +248,7 @@ if __name__=='__main__':
             changed = False
 
         if(ctrl.value() == 0): # unused
-            debounce = True; print("ctrl")
+            debounce = True; print("op: ctrl")
 
         if(keyA.value() == 0 and debounce == False):
             M.zoom_out(d); debounce = True; changed = True; print("op: zout")
@@ -257,10 +257,10 @@ if __name__=='__main__':
             M.zoom_in(d);  debounce = True; changed = True; print("op: zin")
 
         if(keyX.value() == 0): # unused
-            debounce = True; print("keyX")
+            debounce = True; print("op: keyX")
 
         if(keyY.value() == 0): # unused
-            debounce = True; print("keyY")
+            debounce = True; print("op: keyY")
         
         if(up.value() == 0 and debounce == False):
             M.pan_up(d);    debounce = True; changed = True; print("op: up")
