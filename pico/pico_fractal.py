@@ -40,13 +40,6 @@ class LCD_1inch3(framebuf.FrameBuffer):
         self.white =   0xffff
         self.black =   0x0000
         self.yellow =  0x07ff
-
-        # extents of the mandelbrot region plane
-        self.x0 = -1.5
-        self.y0 = -1.5
-        self.x1 = 1.5
-        self.y1 = 1.5
-
         
     def write_cmd(self, cmd):
         self.cs(1)
@@ -165,25 +158,55 @@ class LCD_1inch3(framebuf.FrameBuffer):
         self.spi.write(self.buffer)
         self.cs(1)
 
-    def render_mandelbrot_row(self, y, step=16, n=64):
+class Mandelbrot():
+    def __init__(self, lcd):
+        # drawing surface
+        self.lcd = lcd
+        # extents of the imaginary plane containing the fractal
+        self.x0 = -2; self.y0 = -1.5
+        self.x1 =  1; self.y1 =  1.5
+
+    # render a single row
+    def render_row(self, y, step=16, n=64):
         factor = int(0xffff / n)
-        for x in range(0, self.width, step):
-            xp = self.x0 + (self.x1 - self.x0) * x / self.width
-            yp = self.y0 + (self.y1 - self.y0) * y / self.height
+        for x in range(0, self.lcd.width, step):
+            xp = self.x0 + (self.x1 - self.x0) * x / self.lcd.width
+            yp = self.y0 + (self.y1 - self.y0) * y / self.lcd.height
             c = complex(xp, yp)
             z = 0
             for i in range(n):
                 z = z * z + c
                 if abs(z) > 2:
                     break
-            self.fill_rect(x, y, step, step, i * factor)
+            self.lcd.fill_rect(x, y, step, step, i * factor)
             #self.pixel(x, y, i * factor)
 
-    def render_mandelbrot(self, step=16, n=64):
+    # render the full image
+    def render(self, step=16, n=64):
         for y in range(0, self.height, step):
             self.render_mandelbrot_row(y, step, n)
 
+    def pan_right(self, d):
+        self.x0 = self.x0 + d; self.x1 = self.x1 + d
 
+    def pan_left(self, d):
+        self.x0 = self.x0 - d; self.x1 = self.x1 - d
+
+    def pan_up(self, d):
+        self.y0 = self.y0 - d; self.y1 = self.y1 - d
+
+    def pan_down(self, d):     
+        self.y0 = self.y0 + d; self.y1 = self.y1 + d
+    
+    def zoom_in(self, d):
+        self.x0 = self.x0 + d; self.x1 = self.x1 - d
+        self.y0 = self.y0 + d; self.y1 = self.y1 - d
+
+    def zoom_out(self, d):
+        self.x0 = self.x0 - d; self.x1 = self.x1 + d
+        self.y0 = self.y0 - d; self.y1 = self.y1 + d
+
+# Main
 if __name__=='__main__':
     pwm = PWM(Pin(BL))
     pwm.freq(1000)
@@ -191,17 +214,18 @@ if __name__=='__main__':
 
     LCD = LCD_1inch3()
     LCD.fill(LCD.black)
+    M = Mandelbrot(LCD)
 
-    keyA = Pin(15,Pin.IN,Pin.PULL_UP)
-    keyB = Pin(17,Pin.IN,Pin.PULL_UP)
-    keyX = Pin(19 ,Pin.IN,Pin.PULL_UP)
-    keyY = Pin(21 ,Pin.IN,Pin.PULL_UP)
+    keyA  = Pin(15,Pin.IN,Pin.PULL_UP)
+    keyB  = Pin(17,Pin.IN,Pin.PULL_UP)
+    keyX  = Pin(19,Pin.IN,Pin.PULL_UP)
+    keyY  = Pin(21,Pin.IN,Pin.PULL_UP)
     
-    up = Pin(2,Pin.IN,Pin.PULL_UP)
-    down = Pin(18,Pin.IN,Pin.PULL_UP)
-    left = Pin(16,Pin.IN,Pin.PULL_UP)
+    up    = Pin( 2,Pin.IN,Pin.PULL_UP)
+    down  = Pin(18,Pin.IN,Pin.PULL_UP)
+    left  = Pin(16,Pin.IN,Pin.PULL_UP)
     right = Pin(20,Pin.IN,Pin.PULL_UP)
-    ctrl = Pin(3,Pin.IN,Pin.PULL_UP)
+    ctrl  = Pin( 3,Pin.IN,Pin.PULL_UP)
 
     n = 256 # max iterations
     minstep = 1 # minimum step size
@@ -212,65 +236,47 @@ if __name__=='__main__':
     changed = True # zoom or pan change tracking
 
     while(1):
-        d = (LCD.x1 - LCD.x0) / 4 # zoom factor
+        d = (M.x1 - M.x0) / 4 # zoom factor
+
         if changed: # redraw from start
             print(d)
             step = maxstep
             row = 0
             changed = False
 
-        # ctrl
-        if(ctrl.value() == 0):
-            l = "ctrl"
-            print(l)
+        if(ctrl.value() == 0): # unused
+            debounce = True; print("ctrl")
 
-        # zoom out
         if(keyA.value() == 0 and debounce == False):
-            LCD.x0 = LCD.x0 - d; LCD.x1 = LCD.x1 + d; 
-            LCD.y0 = LCD.y0 - d; LCD.y1 = LCD.y1 + d; 
-            debounce = True; changed = True; print("zout")
+            M.zoom_out(d); debounce = True; changed = True; print("zout")
 
-        # zoom in
         if(keyB.value() == 0 and debounce == False):
-            LCD.x0 = LCD.x0 + d; LCD.x1 = LCD.x1 - d; 
-            LCD.y0 = LCD.y0 + d; LCD.y1 = LCD.y1 - d; 
-            debounce = True; changed = True; print("zin")
+            M.zoom_in(d); debounce = True; changed = True; print("zin")
 
-        # unused
-        if(keyX.value() == 0):
+        if(keyX.value() == 0): # unused
             debounce = True; print("keyX")
 
-        # unused
-        if(keyY.value() == 0):
+        if(keyY.value() == 0): # unused
             debounce = True; print("keyY")
         
-        # pan up
         if(up.value() == 0 and debounce == False):
-            LCD.y0 = LCD.y0 - d; LCD.y1 = LCD.y1 - d
-            debounce = True; changed = True; print("up")
+            M.pan_up(d); debounce = True; changed = True; print("up")
 
-        # pan down
         if(down.value() == 0 and debounce == False):
-            LCD.y0 = LCD.y0 + d; LCD.y1 = LCD.y1 + d
-            debounce = True; changed = True; print("down")
+            M.pan_down(d); debounce = True; changed = True; print("down")
         
-        # pan left
         if(left.value() == 0 and debounce == False):
-            LCD.x0 = LCD.x0 - d; LCD.x1 = LCD.x1 - d
-            debounce = True; changed = True; print("left")
+            M.pan_left(d); debounce = True; changed = True; print("left")
         
-        # pan right
         if(right.value() == 0 and debounce == False):
-            LCD.x0 = LCD.x0 + d; LCD.x1 = LCD.x1 + d
-            debounce = True; changed = True; print("right")
-        
+            M.pan_right(d); debounce = True; changed = True; print("right")
 
         # full screen rendering
-        # LCD.render_mandelbrot(step=step, n=n)
+        # M.render(step=step, n=n)
         # vs.
         # row-wise rendering
         if(step > minstep):
-            LCD.render_mandelbrot_row(row, step=step, n=n)
+            M.render_row(row, step=step, n=n)
 
         if(debounce == True):
             time.sleep(0.25)
