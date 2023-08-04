@@ -14,6 +14,8 @@ RST = 12
 MOSI = 11
 SCK = 10
 CS = 9
+MAXCOLOR = 0xffff # max color value in RGB565
+MAXGRAY  = 0x001f # max gray component value of RGB565
 
 class LCD_1inch3(framebuf.FrameBuffer):
     def __init__(self):
@@ -34,12 +36,8 @@ class LCD_1inch3(framebuf.FrameBuffer):
         super().__init__(self.buffer, self.width, self.height, framebuf.RGB565)
         self.init_display()
         
-        self.red   =   0x07E0
-        self.green =   0x001f
-        self.blue  =   0xf800
         self.white =   0xffff
         self.black =   0x0000
-        self.yellow =  0x07ff
         
     def write_cmd(self, cmd):
         self.cs(1)
@@ -166,9 +164,15 @@ class Mandelbrot():
         self.x0 = -2; self.y0 = -1.5
         self.x1 =  1; self.y1 =  1.5
 
+    def scale_gray(self, c, n=64):
+        sf = int(c * MAXGRAY / n)
+        return (sf << 11) | (sf << 6) | sf
+
+    def scale_color(self, c, n=64):
+        return c * int(MAXCOLOR / n)
+
     # render a single row
     def render_row(self, y, step=16, n=64):
-        factor = int(0xffff / n)
         for x in range(0, self.lcd.width, step):
             xp = self.x0 + (self.x1 - self.x0) * x / self.lcd.width
             yp = self.y0 + (self.y1 - self.y0) * y / self.lcd.height
@@ -178,8 +182,8 @@ class Mandelbrot():
                 z = z * z + c
                 if abs(z) > 2:
                     break
-            self.lcd.fill_rect(x, y, step, step, i * factor)
-            #self.pixel(x, y, i * factor)
+            self.lcd.fill_rect(x, y, step, step, self.scale_color(i, n=n))
+            #self.lcd.fill_rect(x, y, step, step, self.scale_gray(i, n=n))
 
     # render the full image
     def render(self, step=16, n=64):
